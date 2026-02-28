@@ -430,6 +430,91 @@ function initRightPanelResize(): void {
   console.log('[Atlas] Right panel resize initialised');
 }
 
+// ── Left panel drag-to-resize ─────────────────────────────────────────────────
+
+const LEFT_PANEL_WIDTH_KEY = 'atlas-left-panel-width';
+const MIN_LEFT_WIDTH = 180;
+const MAX_LEFT_WIDTH = Math.round(window.innerWidth * 0.45);
+
+function initLeftPanelResize(): void {
+  const panel  = document.getElementById('left-panel') as HTMLElement | null;
+  const handle = document.getElementById('left-resize-handle') as HTMLElement | null;
+  if (!panel || !handle) return;
+
+  // Restore persisted width
+  const saved = localStorage.getItem(LEFT_PANEL_WIDTH_KEY);
+  if (saved) {
+    const w = parseInt(saved, 10);
+    if (w >= MIN_LEFT_WIDTH && w <= MAX_LEFT_WIDTH) {
+      panel.style.width = `${w}px`;
+      document.documentElement.style.setProperty('--left-panel-width', `${w}px`);
+    }
+  }
+
+  let startX = 0;
+  let startWidth = 0;
+  let dragging = false;
+
+  const onMouseMove = (e: MouseEvent) => {
+    if (!dragging) return;
+    // Dragging right = panel grows; left = shrinks
+    const delta    = e.clientX - startX;
+    const newWidth = Math.min(MAX_LEFT_WIDTH, Math.max(MIN_LEFT_WIDTH, startWidth + delta));
+    panel.style.width = `${newWidth}px`;
+    document.documentElement.style.setProperty('--left-panel-width', `${newWidth}px`);
+  };
+
+  const onMouseUp = () => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.cursor     = '';
+    document.body.style.userSelect = '';
+    localStorage.setItem(LEFT_PANEL_WIDTH_KEY, String(parseInt(panel.style.width, 10)));
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('mouseup',   onMouseUp);
+  };
+
+  handle.addEventListener('mousedown', (e: MouseEvent) => {
+    e.preventDefault();
+    dragging   = true;
+    startX     = e.clientX;
+    startWidth = panel.offsetWidth;
+    handle.classList.add('dragging');
+    document.body.style.cursor     = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup',   onMouseUp);
+  });
+
+  // Touch support
+  handle.addEventListener('touchstart', (e: TouchEvent) => {
+    const touch = e.touches[0];
+    startX     = touch.clientX;
+    startWidth = panel.offsetWidth;
+    dragging   = true;
+    handle.classList.add('dragging');
+  }, { passive: true });
+
+  handle.addEventListener('touchmove', (e: TouchEvent) => {
+    if (!dragging) return;
+    const touch    = e.touches[0];
+    const delta    = touch.clientX - startX;
+    const newWidth = Math.min(MAX_LEFT_WIDTH, Math.max(MIN_LEFT_WIDTH, startWidth + delta));
+    panel.style.width = `${newWidth}px`;
+    document.documentElement.style.setProperty('--left-panel-width', `${newWidth}px`);
+  }, { passive: true });
+
+  handle.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    localStorage.setItem(LEFT_PANEL_WIDTH_KEY, panel.style.width.replace('px', ''));
+  });
+
+  console.log('[Atlas] Left panel resize initialised');
+}
+
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
 
 function showToast(message: string, duration = 2200): void {
@@ -588,6 +673,7 @@ async function init(): Promise<void> {
   await initPaperTradingToggle();
   initStatusBar();
   initGlobeWiring();
+  initLeftPanelResize();
   initRightPanelResize();
   await initKeyboardShortcuts();
 

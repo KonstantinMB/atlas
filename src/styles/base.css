@@ -215,6 +215,8 @@ body {
   flex-direction: column;
   transition: background var(--transition-base), border-color var(--transition-base);
   font-size: 13px;
+  /* needed so the resize handle can be positioned absolute inside */
+  isolation: isolate;
 }
 
 /* Divider between layers and trading sections */
@@ -261,6 +263,43 @@ body {
 
 .left-trading-panel .panel-body {
   font-size: 0.75rem;
+}
+
+/* Drag handle on the RIGHT edge of left panel */
+.left-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+  z-index: 10;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.left-resize-handle:hover,
+.left-resize-handle.dragging {
+  background: rgba(74, 222, 128, 0.25);
+}
+
+.left-resize-handle::before {
+  content: '⋮';
+  position: absolute;
+  top: 50%;
+  right: -1px;
+  transform: translateY(-50%);
+  color: var(--border-primary);
+  font-size: 14px;
+  line-height: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.left-resize-handle:hover::before,
+.left-resize-handle.dragging::before {
+  opacity: 1;
 }
 
 /* ── Right panel — resizable ─────────────────────────────────────────────── */
