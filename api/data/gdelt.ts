@@ -66,14 +66,22 @@ function normalize(raw: { articles?: GdeltArticle[] }): GdeltEvent[] {
 }
 
 export default withCors(async (_req: Request) => {
-  const events = await withCache<GdeltEvent[]>('gdelt:events:global', 900, async () => {
-    const res = await fetch(GDELT_URL, {
-      headers: { Accept: 'application/json' },
+  // 30-minute cache — GDELT free tier rate-limits heavy polling
+  let events: GdeltEvent[] = [];
+  try {
+    events = await withCache<GdeltEvent[]>('gdelt:events:global', 1800, async () => {
+      const res = await fetch(GDELT_URL, {
+        headers: { Accept: 'application/json', 'User-Agent': 'Atlas/1.0' },
+      });
+      // 429 = rate limited, return empty so stale cache is used next time
+      if (res.status === 429) return [];
+      if (!res.ok) throw new Error(`GDELT upstream error: ${res.status}`);
+      const raw = await res.json();
+      return normalize(raw);
     });
-    if (!res.ok) throw new Error(`GDELT upstream error: ${res.status}`);
-    const raw = await res.json();
-    return normalize(raw);
-  });
+  } catch {
+    events = [];
+  }
 
   return new Response(JSON.stringify({ events, count: events.length, timestamp: Date.now() }), {
     status: 200,

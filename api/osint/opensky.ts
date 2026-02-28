@@ -64,24 +64,33 @@ function normalizeState(s: StateVector): Aircraft | null {
 }
 
 export default withCors(async (_req: Request) => {
-  const aircraft = await withCache<Aircraft[]>('osint:aircraft', 60, async () => {
-    const res = await fetch(OPENSKY_URL, {
-      headers: { 'User-Agent': 'Atlas/1.0 (intelligence dashboard)' },
+  // 5-minute cache — OpenSky anonymous tier allows ~1 req/5min from shared IPs
+  let aircraft: Aircraft[] = [];
+  try {
+    aircraft = await withCache<Aircraft[]>('osint:aircraft', 300, async () => {
+      const res = await fetch(OPENSKY_URL, {
+        headers: { 'User-Agent': 'Atlas/1.0 (intelligence dashboard)' },
+      });
+      // OpenSky returns 429 when rate-limited — return empty rather than error
+      if (res.status === 429 || res.status === 503) return [];
+      if (!res.ok) throw new Error(`OpenSky upstream error: ${res.status}`);
+
+      const data: OpenSkyResponse = await res.json();
+      const states = data.states ?? [];
+
+      const results: Aircraft[] = [];
+      for (const state of states) {
+        if (results.length >= 1000) break;
+        const ac = normalizeState(state);
+        if (ac) results.push(ac);
+      }
+
+      return results;
     });
-    if (!res.ok) throw new Error(`OpenSky upstream error: ${res.status}`);
-
-    const data: OpenSkyResponse = await res.json();
-    const states = data.states ?? [];
-
-    const results: Aircraft[] = [];
-    for (const state of states) {
-      if (results.length >= 1000) break;
-      const ac = normalizeState(state);
-      if (ac) results.push(ac);
-    }
-
-    return results;
-  });
+  } catch {
+    // Any error (including Upstash overload propagation) → return empty gracefully
+    aircraft = [];
+  }
 
   return new Response(
     JSON.stringify({ aircraft, count: aircraft.length, source: 'opensky', timestamp: Date.now() }),
@@ -89,7 +98,7 @@ export default withCors(async (_req: Request) => {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       },
     }
   );

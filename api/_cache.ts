@@ -111,6 +111,15 @@ function setInMemory<T>(key: string, data: T, ttlSeconds: number): void {
 }
 
 /**
+ * Check if an error is an Upstash "overloaded" signal
+ */
+function isUpstashOverloaded(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as Record<string, unknown>;
+  return e['overloaded'] === true || String(e['message'] ?? '').includes('overload');
+}
+
+/**
  * Get data from Redis cache
  */
 async function getFromRedis<T>(key: string): Promise<T | null> {
@@ -132,6 +141,10 @@ async function getFromRedis<T>(key: string): Promise<T | null> {
     await redis.del(key);
     return null;
   } catch (error) {
+    if (isUpstashOverloaded(error)) {
+      // Redis overloaded — skip silently, memory cache still works
+      return null;
+    }
     console.error('Redis get error:', error);
     return null;
   }
@@ -154,6 +167,10 @@ async function setInRedis<T>(key: string, data: T, ttlSeconds: number): Promise<
     // Set with Redis TTL (add 10% buffer to handle clock skew)
     await redis.set(key, entry, { ex: Math.floor(ttlSeconds * 1.1) });
   } catch (error) {
+    if (isUpstashOverloaded(error)) {
+      // Redis overloaded — data still in memory cache, acceptable degradation
+      return;
+    }
     console.error('Redis set error:', error);
   }
 }

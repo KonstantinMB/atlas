@@ -113,15 +113,54 @@ function parseItems(xml: string): DisasterAlert[] {
   return alerts;
 }
 
-export default withCors(async (_req: Request) => {
-  const alerts = await withCache<DisasterAlert[]>('gdacs:alerts', 1800, async () => {
+// Fallback: GDACS JSON API (more permissive with datacenter IPs than the RSS feed)
+const GDACS_JSON_URL =
+  'https://www.gdacs.org/gdacsapi/api/events/geteventlist/MAP?eventtypes=EQ,TC,FL,VO,DR,WF&alertlevel=&fromDate=&toDate=&country=&eventlist=&intermediatepage=';
+
+async function fetchGdacs(): Promise<DisasterAlert[]> {
+  // Try RSS first
+  try {
     const res = await fetch(GDACS_URL, {
-      headers: { Accept: 'application/xml, text/xml, */*' },
+      headers: { Accept: 'application/xml, text/xml, */*', 'User-Agent': 'Atlas/1.0' },
     });
-    if (!res.ok) throw new Error(`GDACS upstream error: ${res.status}`);
-    const xml = await res.text();
-    return parseItems(xml);
-  });
+    if (res.ok) {
+      const xml = await res.text();
+      const items = parseItems(xml);
+      if (items.length > 0) return items;
+    }
+  } catch { /* fall through */ }
+
+  // Fallback: JSON API
+  try {
+    const res = await fetch(GDACS_JSON_URL, {
+      headers: { Accept: 'application/json', 'User-Agent': 'Atlas/1.0' },
+    });
+    if (!res.ok) return [];
+    const json = await res.json() as { features?: Array<{ properties: Record<string, unknown>; geometry: { coordinates: [number, number] } }> };
+    return (json.features ?? []).map((f) => {
+      const p = f.properties;
+      const coords = f.geometry?.coordinates ?? [0, 0];
+      return {
+        id: simpleHash(String(p['eventid'] ?? Math.random())),
+        title: String(p['name'] ?? p['htmldescription'] ?? 'Unknown event'),
+        type: String(p['eventtype'] ?? 'disaster').toLowerCase(),
+        severity: String(p['alertlevel'] ?? 'green').toLowerCase() as 'green' | 'orange' | 'red',
+        lat: coords[1] ?? 0,
+        lon: coords[0] ?? 0,
+        date: p['fromdate'] ? Date.parse(String(p['fromdate'])) : Date.now(),
+        url: String(p['url'] ?? ''),
+      };
+    });
+  } catch { return []; }
+}
+
+export default withCors(async (_req: Request) => {
+  let alerts: DisasterAlert[] = [];
+  try {
+    alerts = await withCache<DisasterAlert[]>('gdacs:alerts', 1800, fetchGdacs);
+  } catch {
+    alerts = [];
+  }
 
   return new Response(JSON.stringify({ alerts, count: alerts.length, timestamp: Date.now() }), {
     status: 200,
