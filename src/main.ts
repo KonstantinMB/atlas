@@ -102,33 +102,36 @@ async function initPanels(): Promise<void> {
     return;
   }
 
-  try {
-    const { initPanelManager } = await import('./panels/panel-manager');
-    const { initStrategicRiskPanel } = await import('./panels/strategic-risk');
-    const { initNewsFeedPanel } = await import('./panels/news-feed');
-    const { initAIInsightsPanel } = await import('./panels/ai-insights');
-    const { initMarketsPanel } = await import('./panels/markets');
-    const { initInstabilityPanel } = await import('./panels/country-instability');
-    const { initSignalsPanel } = await import('./panels/signals');
-    const { initPortfolioPanel } = await import('./panels/portfolio');
+  // Import panel manager first — it's required by all panels
+  const { initPanelManager } = await import('./panels/panel-manager');
+  initPanelManager();
 
-    initPanelManager();
-    initPortfolioPanel();       // Top — always visible first
-    initStrategicRiskPanel();
-    initSignalsPanel();
-    initNewsFeedPanel();
-    initAIInsightsPanel();
-    initMarketsPanel();
-    initInstabilityPanel();
+  // Each panel gets its own try-catch so one failure never blocks the rest
+  const panels: Array<{ name: string; loader: () => Promise<{ [key: string]: () => void }>; fn: string }> = [
+    { name: 'strategic-risk',      loader: () => import('./panels/strategic-risk'),      fn: 'initStrategicRiskPanel' },
+    { name: 'portfolio',           loader: () => import('./panels/portfolio'),            fn: 'initPortfolioPanel' },
+    { name: 'signals',             loader: () => import('./panels/signals'),              fn: 'initSignalsPanel' },
+    { name: 'news-feed',           loader: () => import('./panels/news-feed'),            fn: 'initNewsFeedPanel' },
+    { name: 'ai-insights',         loader: () => import('./panels/ai-insights'),          fn: 'initAIInsightsPanel' },
+    { name: 'markets',             loader: () => import('./panels/markets'),              fn: 'initMarketsPanel' },
+    { name: 'country-instability', loader: () => import('./panels/country-instability'), fn: 'initInstabilityPanel' },
+  ];
 
-    console.log('[Atlas] Panels initialized');
-
-    // Start data service polling after all panels have registered their listeners
-    dataService.startPolling();
-    console.log('[Atlas] Data service polling started');
-  } catch (error) {
-    console.error('[Atlas] Panel initialization failed:', error);
+  for (const panel of panels) {
+    try {
+      const mod = await panel.loader();
+      const initFn = mod[panel.fn] as (() => void) | undefined;
+      if (typeof initFn === 'function') initFn();
+    } catch (err) {
+      console.error(`[Atlas] Panel "${panel.name}" failed to initialize:`, err);
+    }
   }
+
+  console.log('[Atlas] Panels initialized');
+
+  // Start data service polling after all panels have registered their listeners
+  dataService.startPolling();
+  console.log('[Atlas] Data service polling started');
 }
 
 /**
