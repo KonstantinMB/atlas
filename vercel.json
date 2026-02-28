@@ -2,65 +2,25 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": null,
-  "routes": [
-    { "src": "/api/data/gdelt", "dest": "/api/data/gdelt.ts" },
-    { "src": "/api/data/usgs", "dest": "/api/data/usgs.ts" },
-    { "src": "/api/data/gdacs", "dest": "/api/data/gdacs.ts" },
-    { "src": "/api/data/eonet", "dest": "/api/data/eonet.ts" },
-    { "src": "/api/market/fear-greed", "dest": "/api/market/fear-greed.ts" },
-    { "src": "/api/market/coingecko", "dest": "/api/market/coingecko.ts" },
-    { "src": "/api/market/yahoo", "dest": "/api/market/yahoo.ts" },
-    { "src": "/api/rss/proxy", "dest": "/api/rss/proxy.ts" },
-    { "src": "/api/osint/polymarket", "dest": "/api/osint/polymarket.ts" },
-    { "src": "/api/data/acled", "dest": "/api/data/acled.ts" },
-    { "src": "/api/data/firms", "dest": "/api/data/firms.ts" },
-    { "src": "/api/market/fred", "dest": "/api/market/fred.ts" },
-    { "src": "/api/market/finnhub", "dest": "/api/market/finnhub.ts" },
-    { "src": "/api/ai/summarize", "dest": "/api/ai/summarize.ts" },
-    { "src": "/api/ai/sentiment", "dest": "/api/ai/sentiment.ts" },
-    { "src": "/api/osint/opensky", "dest": "/api/osint/opensky.ts" },
-    { "src": "/api/osint/sanctions", "dest": "/api/osint/sanctions.ts" },
-    { "src": "/api/health", "dest": "/api/health.ts" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET, POST, OPTIONS"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type, Authorization"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "public, s-maxage=60, stale-while-revalidate=300"
-        }
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization" },
+        { "key": "Cache-Control", "value": "public, s-maxage=60, stale-while-revalidate=300" }
       ]
     },
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "X-XSS-Protection",
-          "value": "1; mode=block"
-        }
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" }
       ]
     }
   ]
