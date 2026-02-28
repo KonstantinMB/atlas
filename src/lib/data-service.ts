@@ -46,6 +46,43 @@ export interface MarketQuote {
   name: string;
   price: number;
   changePercent: number;
+  change5dPct: number;
+  history5d: number[];
+  timestamp: number;
+}
+
+export interface CryptoPrice {
+  id: string;
+  symbol: string;
+  name: string;
+  price: number;
+  change24h: number;
+  change7d: number;
+  marketCap: number;
+  volume24h: number;
+  marketCapRank: number;
+}
+
+export interface CryptoDetail {
+  prices: CryptoPrice[];
+  totalCryptoMarketCap: number;
+  lastFetch: number;
+}
+
+export interface RadarSignal {
+  id: string;
+  name: string;
+  value: string;
+  signal: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+  description: string;
+}
+
+export interface MacroRadarDetail {
+  signals: RadarSignal[];
+  verdict: 'BUY' | 'CASH' | 'SELL';
+  bullishCount: number;
+  bearishCount: number;
+  neutralCount: number;
   timestamp: number;
 }
 
@@ -86,6 +123,8 @@ class DataService extends EventTarget {
   private gdacs: GdacsDetail | null = null;
   private fearGreed: FearGreedData | null = null;
   private yahoo: YahooDetail | null = null;
+  private crypto: CryptoDetail | null = null;
+  private macroRadar: MacroRadarDetail | null = null;
 
   // Accessors for current cached state (panels can call these after events fire)
   getGdelt(): GdeltDetail | null { return this.gdelt; }
@@ -93,6 +132,8 @@ class DataService extends EventTarget {
   getGdacs(): GdacsDetail | null { return this.gdacs; }
   getFearGreed(): FearGreedData | null { return this.fearGreed; }
   getYahoo(): YahooDetail | null { return this.yahoo; }
+  getCrypto(): CryptoDetail | null { return this.crypto; }
+  getMacroRadar(): MacroRadarDetail | null { return this.macroRadar; }
 
   async fetchGdelt(): Promise<void> {
     try {
@@ -166,6 +207,36 @@ class DataService extends EventTarget {
     }
   }
 
+  async fetchCrypto(): Promise<void> {
+    try {
+      const data = await api.fetch<{ prices: CryptoPrice[]; totalCryptoMarketCap: number }>(
+        '/api/market/coingecko',
+        60_000
+      );
+      this.crypto = {
+        prices: data.prices ?? [],
+        totalCryptoMarketCap: data.totalCryptoMarketCap ?? 0,
+        lastFetch: Date.now(),
+      };
+      this.dispatchEvent(new CustomEvent<CryptoDetail>('crypto', { detail: this.crypto }));
+    } catch (err) {
+      console.error('[DataService] Crypto fetch failed:', err);
+    }
+  }
+
+  async fetchMacroRadar(): Promise<void> {
+    try {
+      const data = await api.fetch<MacroRadarDetail>(
+        '/api/market/macro-radar',
+        300_000 // 5 min TTL
+      );
+      this.macroRadar = data;
+      this.dispatchEvent(new CustomEvent<MacroRadarDetail>('macro-radar', { detail: this.macroRadar }));
+    } catch (err) {
+      console.error('[DataService] Macro radar fetch failed:', err);
+    }
+  }
+
   /**
    * Start polling all data sources on staggered intervals.
    * Call once after all panels have been initialized.
@@ -175,6 +246,8 @@ class DataService extends EventTarget {
     setTimeout(() => { void this.fetchYahoo(); }, 1_000);
     setTimeout(() => { void this.fetchFearGreed(); }, 1_500);
     setTimeout(() => { void this.fetchGdelt(); }, 2_000);
+    setTimeout(() => { void this.fetchCrypto(); }, 2_000);
+    setTimeout(() => { void this.fetchMacroRadar(); }, 4_000);
     setTimeout(() => {
       void this.fetchUsgs();
       void this.fetchGdacs();
@@ -186,6 +259,8 @@ class DataService extends EventTarget {
     setInterval(() => { void this.fetchGdelt(); }, 900_000);
     setInterval(() => { void this.fetchUsgs(); }, 300_000);
     setInterval(() => { void this.fetchGdacs(); }, 1_800_000);
+    setInterval(() => { void this.fetchCrypto(); }, 60_000);
+    setInterval(() => { void this.fetchMacroRadar(); }, 300_000);
   }
 }
 
