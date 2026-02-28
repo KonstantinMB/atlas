@@ -114,8 +114,9 @@ async function initPanels(): Promise<void> {
       const mod = await panel.loader();
       const initFn = mod[panel.fn] as (() => void) | undefined;
       if (typeof initFn === 'function') initFn();
+      else console.warn(`[Atlas] Panel "${panel.name}" export "${panel.fn}" not found`);
     } catch (err) {
-      console.error(`[Atlas] Panel "${panel.name}" failed:`, err);
+      console.error(`[Atlas] Panel "${panel.name}" failed to load:`, err);
     }
   }
 
@@ -647,10 +648,24 @@ async function initKeyboardShortcuts(): Promise<void> {
 async function init(): Promise<void> {
   console.log('[Atlas] Initialising Global Intelligence Platform…');
 
+  // Vercel Analytics
+  try {
+    const { inject } = await import('@vercel/analytics');
+    inject();
+  } catch { /* no-op in dev */ }
+
   initTheme();
 
-  // Parallel: globe + panels (both register listeners independently)
   initGlobe();
+
+  // Trading engine must initialize before panels (portfolio panel imports tradingEngine at module level)
+  const { initTradingEngine } = await import('./trading/index');
+  initTradingEngine();
+
+  const { initBootstrap } = await import('./trading/bootstrap');
+  initBootstrap();
+
+  // Now safe to load panels
   await initPanels();
 
   initThemeToggle();
@@ -662,14 +677,6 @@ async function init(): Promise<void> {
   } catch (err) {
     console.error('[Atlas] Intelligence engine failed:', err);
   }
-
-  // Paper trading engine
-  const { initTradingEngine } = await import('./trading/index');
-  initTradingEngine();
-
-  // First-visit bootstrap (must run after engine is up)
-  const { initBootstrap } = await import('./trading/bootstrap');
-  initBootstrap();
 
   // UI controls
   await initPaperTradingToggle();

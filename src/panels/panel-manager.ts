@@ -143,8 +143,16 @@ export function createPanel(config: PanelConfig): HTMLElement {
   panel.appendChild(header);
   panel.appendChild(body);
 
-  // Let the panel's init function populate the body
-  config.init(body);
+  // Populate body — catch errors so a failing panel never blocks the rest
+  try {
+    config.init(body);
+  } catch (err) {
+    console.error(`[PanelManager] Panel "${config.id}" body init failed:`, err);
+    body.innerHTML = `
+      <div style="padding:1rem;font-size:0.68rem;color:#ef4444;font-family:monospace;">
+        Panel failed to load.<br><small>${err instanceof Error ? err.message : String(err)}</small>
+      </div>`;
+  }
 
   return panel;
 }
