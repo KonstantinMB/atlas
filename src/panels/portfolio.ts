@@ -519,12 +519,21 @@ function buildPortfolioBody(container: HTMLElement): void {
 // ── Export ────────────────────────────────────────────────────────────────────
 
 export function initPortfolioPanel(): void {
+  // Clear any stale "collapsed" state so the portfolio is always visible on load
+  try {
+    const stored = JSON.parse(localStorage.getItem('atlas-panel-collapsed') ?? '{}') as Record<string, boolean>;
+    if (stored['portfolio'] === true) {
+      delete stored['portfolio'];
+      localStorage.setItem('atlas-panel-collapsed', JSON.stringify(stored));
+    }
+  } catch { /* ignore */ }
+
   registerPanel({
     id: 'portfolio',
     title: 'Portfolio',
     badge: 'PAPER',
     badgeClass: 'mock',
-    defaultCollapsed: true,
+    defaultCollapsed: false,
     init: buildPortfolioBody,
   });
 }

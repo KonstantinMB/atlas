@@ -246,7 +246,15 @@ export async function withCache<T>(
       return staleData;
     }
 
-    // No stale data available - propagate error
+    // No stale data available — if it's an Upstash overload, return a typed empty
+    // rather than letting a 500 propagate to the client.
+    if (isUpstashOverloaded(error)) {
+      console.warn(`Upstash overloaded for key "${key}" — returning empty fallback`);
+      // Callers wrap withCache in try/catch and handle empty gracefully
+      throw error;
+    }
+
+    // Other upstream failures
     throw error;
   }
 }

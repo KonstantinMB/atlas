@@ -207,7 +207,7 @@ export function initInstabilityPanel(): void {
   registerPanel({
     id: 'country-instability',
     title: 'Country Instability Index',
-    defaultCollapsed: false,
+    defaultCollapsed: true,
     init: buildInstabilityBody,
   });
 }

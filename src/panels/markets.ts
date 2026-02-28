@@ -193,7 +193,7 @@ export function initMarketsPanel(): void {
     title: 'Markets',
     badge: 'MOCK',
     badgeClass: 'mock',
-    defaultCollapsed: false,
+    defaultCollapsed: true,
     init: buildMarketsBody,
   });
 }
