@@ -167,9 +167,18 @@ function buildNewsFeedBody(container: HTMLElement): void {
 
   // ── GDELT live data ──────────────────────────────────────────────────────────
   let liveLoaded = false;
+  let errorTimeout: ReturnType<typeof setTimeout>;
 
   function handleGdelt(detail: GdeltDetail): void {
-    if (!detail.events?.length) return;
+    clearTimeout(errorTimeout);
+
+    if (!detail.events?.length) {
+      // GDELT returned empty (rate limited) — show degraded status, keep mock items
+      statusText.textContent = 'Live feed rate-limited — showing curated intelligence';
+      dot.style.background = 'var(--status-medium)';
+      liveLoaded = true;
+      return;
+    }
 
     // Prepend live items before existing content (newest first, limit to 10)
     const toShow = detail.events.slice(0, 10);
@@ -206,21 +215,12 @@ function buildNewsFeedBody(container: HTMLElement): void {
   if (existing) handleGdelt(existing);
 
   // Error notice if GDELT never arrives after 30s
-  const errorTimeout = setTimeout(() => {
+  errorTimeout = setTimeout(() => {
     if (!liveLoaded) {
-      statusText.textContent = 'Live data unavailable';
+      statusText.textContent = 'Live data unavailable — showing curated feed';
       dot.style.background = 'var(--status-critical)';
     }
   }, 30_000);
-
-  // Cancel error timeout once data loads
-  dataService.addEventListener(
-    'gdelt',
-    () => {
-      clearTimeout(errorTimeout);
-    },
-    { once: true }
-  );
 }
 
 export function initNewsFeedPanel(): void {

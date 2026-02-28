@@ -38,12 +38,12 @@ function createFinancialCentersLayer() {
     stroked: true,
     filled: true,
     radiusScale: 1,
-    radiusMinPixels: 4,
-    radiusMaxPixels: 16,
-    lineWidthMinPixels: 1,
+    radiusMinPixels: 5,
+    radiusMaxPixels: 18,
+    lineWidthMinPixels: 1.5,
     getPosition: (d) => [d.lon, d.lat, 0],
     getRadius: 5,
-    getFillColor: [16, 185, 129, 200],
+    getFillColor: [16, 185, 129, 150],
     getLineColor: [16, 185, 129, 255],
   });
 }

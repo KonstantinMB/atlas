@@ -10,6 +10,8 @@ import type { MapViewState } from '@deck.gl/core';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { getStore } from '../lib/state';
+import { showEntityPopup, hideEntityPopup, initEntityPopup } from './entity-popup';
+import type { EntityInfo } from './entity-popup';
 
 /**
  * Theme-aware basemap styles
@@ -135,6 +137,9 @@ class GlobeManager {
       initialized: true,
     }));
 
+    // Initialize entity popup DOM
+    initEntityPopup();
+
     // Subscribe to active layer changes
     store.subscribe('globe', (globeState) => {
       const newActiveLayerIds = new Set(globeState.activeLayers);
@@ -250,33 +255,25 @@ class GlobeManager {
    */
   private handleClick(info: PickingInfo): void {
     if (!info.object) {
-      // Clicked on empty space - clear selection
+      hideEntityPopup();
       const store = getStore();
-      store.set('selected', {
-        country: null,
-        event: null,
-        asset: null,
-      });
+      store.set('selected', { country: null, event: null, asset: null });
       return;
     }
 
-    // Handle clicks on different layer types
-    const layerId = info.layer?.id;
-    const object = info.object;
+    const layerId = info.layer?.id ?? '';
+    const obj = info.object as Record<string, unknown>;
 
-    console.log('[Globe] Clicked:', { layerId, object });
+    // Show entity popup
+    const entity = buildEntityInfo(layerId, obj);
+    if (entity) showEntityPopup(entity);
 
-    // Update selected entity in state
+    // Update selected state
     const store = getStore();
     store.update('selected', (current) => {
-      // Determine what type of entity was clicked
-      if (object.type === 'country' || object.country) {
-        return { ...current, country: object.id || object.country };
-      } else if (object.type === 'event' || object.eventId) {
-        return { ...current, event: object.id || object.eventId };
-      } else if (object.type === 'asset' || object.assetId) {
-        return { ...current, asset: object.id || object.assetId };
-      }
+      if (obj['country']) return { ...current, country: String(obj['id'] ?? obj['country']) };
+      if (obj['eventId']) return { ...current, event: String(obj['id'] ?? obj['eventId']) };
+      if (obj['assetId']) return { ...current, asset: String(obj['id'] ?? obj['assetId']) };
       return current;
     });
   }
@@ -354,6 +351,156 @@ class GlobeManager {
       this.map.resize();
     }
   }
+}
+
+// ── Entity info builder ──────────────────────────────────────────────────────
+
+function buildEntityInfo(layerId: string, obj: Record<string, unknown>): EntityInfo | null {
+  const str = (v: unknown, fallback = 'Unknown') => (v != null ? String(v) : fallback);
+  const coordsVal = (obj['lon'] != null && obj['lat'] != null)
+    ? [Number(obj['lon']), Number(obj['lat'])] as [number, number]
+    : undefined;
+  // Avoid assigning undefined to exactOptionalPropertyType fields
+  const withCoords = coordsVal !== undefined ? { coordinates: coordsVal } : {};
+
+  if (layerId === 'military-bases') {
+    return {
+      id: str(obj['id'] ?? obj['name']),
+      name: str(obj['name']),
+      type: 'military-base',
+      subtitle: `${str(obj['country'])} · ${str(obj['alliance'])}`,
+      fields: [
+        { label: 'TYPE',     value: str(obj['type']).toUpperCase() },
+        { label: 'ALLIANCE', value: str(obj['alliance']) },
+        { label: 'COUNTRY',  value: str(obj['country']) },
+        { label: 'STATUS',   value: 'ACTIVE' },
+      ],
+      ...withCoords,
+      color: '#3b82f6',
+    };
+  }
+
+  if (layerId === 'nuclear-facilities') {
+    return {
+      id: str(obj['id'] ?? obj['name']),
+      name: str(obj['name']),
+      type: 'nuclear',
+      subtitle: `${str(obj['country'])} · ${str(obj['type'], 'Facility')}`,
+      fields: [
+        { label: 'TYPE',    value: str(obj['type']) },
+        { label: 'COUNTRY', value: str(obj['country']) },
+        { label: 'STATUS',  value: str(obj['status'], 'Active') },
+        { label: 'RISK',    value: 'MONITORED' },
+      ],
+      ...withCoords,
+      severity: 'high' as const,
+      color: '#fbbf24',
+    };
+  }
+
+  if (layerId === 'chokepoints') {
+    return {
+      id: str(obj['id'] ?? obj['name']),
+      name: str(obj['name']),
+      type: 'chokepoint',
+      subtitle: str(obj['region'], 'Strategic Waterway'),
+      fields: [
+        { label: 'TYPE',        value: 'MARITIME CHOKEPOINT' },
+        { label: 'THROUGHPUT',  value: str(obj['throughput'], 'High') },
+        { label: 'IMPORTANCE',  value: str(obj['importance'], 'Critical') },
+        { label: 'RISK LEVEL',  value: 'ELEVATED' },
+      ],
+      ...withCoords,
+      severity: 'medium' as const,
+      color: '#facc15',
+    };
+  }
+
+  if (layerId === 'financial-centers') {
+    return {
+      id: str(obj['id'] ?? obj['name']),
+      name: str(obj['name']),
+      type: 'financial',
+      subtitle: str(obj['country'], 'Financial Hub'),
+      fields: [
+        { label: 'CITY',     value: str(obj['city']) },
+        { label: 'TYPE',     value: str(obj['type']) },
+        { label: 'COUNTRY',  value: str(obj['country']) },
+        { label: 'STATUS',   value: 'ACTIVE' },
+      ],
+      ...withCoords,
+      color: '#10b981',
+    };
+  }
+
+  if (layerId === 'earthquakes') {
+    const mag = Number(obj['magnitude'] ?? 0);
+    const severity = (mag >= 7 ? 'critical' : mag >= 6 ? 'high' : 'medium') as 'critical' | 'high' | 'medium';
+    return {
+      id: str(obj['id']),
+      name: `M${mag.toFixed(1)} Earthquake`,
+      type: 'earthquake',
+      subtitle: str(obj['place'], 'Unknown Location'),
+      fields: [
+        { label: 'MAGNITUDE', value: `M${mag.toFixed(1)}` },
+        { label: 'DEPTH',     value: `${Number(obj['depth'] ?? 0).toFixed(0)} km` },
+        { label: 'TSUNAMI',   value: obj['tsunami'] ? '⚠ YES' : 'No' },
+        { label: 'TIME',      value: obj['time'] ? new Date(Number(obj['time'])).toUTCString().slice(0, 16) : 'Unknown' },
+      ],
+      ...withCoords,
+      severity,
+      color: '#f97316',
+    };
+  }
+
+  if (layerId === 'fires') {
+    return {
+      id: str(obj['id'] ?? `${obj['lat']},${obj['lon']}`),
+      name: 'Active Fire Detection',
+      type: 'fire',
+      subtitle: str(obj['country'], 'Unknown Region'),
+      fields: [
+        { label: 'BRIGHTNESS', value: str(obj['brightness'], 'N/A') },
+        { label: 'CONFIDENCE', value: str(obj['confidence'], 'N/A') },
+        { label: 'SATELLITE',  value: str(obj['satellite'], 'N/A') },
+        { label: 'FRPS',       value: str(obj['frp'], 'N/A') },
+      ],
+      ...withCoords,
+      severity: 'high' as const,
+      color: '#ef4444',
+    };
+  }
+
+  if (layerId === 'aircraft') {
+    return {
+      id: str(obj['icao24'] ?? obj['callsign']),
+      name: str(obj['callsign'], 'Unknown Aircraft'),
+      type: 'aircraft',
+      subtitle: `ICAO: ${str(obj['icao24'])}`,
+      fields: [
+        { label: 'CALLSIGN',  value: str(obj['callsign']) },
+        { label: 'ALTITUDE',  value: `${Number(obj['altitude'] ?? 0).toFixed(0)} m` },
+        { label: 'SPEED',     value: `${Number(obj['velocity'] ?? 0).toFixed(0)} m/s` },
+        { label: 'COUNTRY',   value: str(obj['originCountry']) },
+      ],
+      ...withCoords,
+      color: '#60a5fa',
+    };
+  }
+
+  // Generic fallback
+  if (obj['name']) {
+    return {
+      id: str(obj['id'] ?? obj['name']),
+      name: str(obj['name']),
+      type: layerId || 'entity',
+      subtitle: str(obj['country'] ?? obj['region'], ''),
+      fields: [],
+      ...withCoords,
+    };
+  }
+
+  return null;
 }
 
 // Singleton instance

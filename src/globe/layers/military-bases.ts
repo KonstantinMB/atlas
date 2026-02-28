@@ -23,13 +23,13 @@ const BASES = BASES_DATA as MilitaryBase[];
 function getAllianceColor(alliance: string): [number, number, number, number] {
   switch (alliance) {
     case 'NATO':
-      return [59, 130, 246, 200];
+      return [59, 130, 246, 230];
     case 'Russia':
-      return [239, 68, 68, 200];
+      return [239, 68, 68, 230];
     case 'China':
-      return [249, 115, 22, 200];
+      return [249, 115, 22, 230];
     default:
-      return [156, 163, 175, 200];
+      return [156, 163, 175, 220];
   }
 }
 
@@ -47,13 +47,13 @@ function createMilitaryBasesLayer() {
     id: 'military-bases',
     data: BASES,
     pickable: true,
-    opacity: 0.9,
+    opacity: 0.95,
     stroked: true,
     filled: true,
     radiusScale: 1,
-    radiusMinPixels: 3,
-    radiusMaxPixels: 12,
-    lineWidthMinPixels: 1,
+    radiusMinPixels: 4,
+    radiusMaxPixels: 14,
+    lineWidthMinPixels: 1.5,
     getPosition: (d) => [d.lon, d.lat, 0],
     getRadius: 3,
     getFillColor: (d) => getAllianceColor(d.alliance),

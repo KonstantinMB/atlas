@@ -220,6 +220,26 @@ function buildRiskBody(container: HTMLElement): void {
   const level = getRiskLevel(INITIAL_SCORE);
   const color = getRiskColor(level);
 
+  // Info bar with tooltip explaining the index
+  const infoBar = document.createElement('div');
+  infoBar.className = 'risk-info-bar';
+
+  const infoLabel = document.createElement('span');
+  infoLabel.className = 'risk-info-label';
+  infoLabel.textContent = 'Global Strategic Risk Index';
+
+  const tooltipTrigger = document.createElement('span');
+  tooltipTrigger.className = 'risk-info-tooltip-trigger';
+  tooltipTrigger.textContent = 'ⓘ';
+  tooltipTrigger.setAttribute(
+    'data-tooltip',
+    'The Global Strategic Risk Index (GSRI) is a composite 0-100 score computed from:\n• Active USGS earthquakes (M4.5+)\n• GDACS disaster alerts\n• Active conflict zones in intelligence feed\n• Market volatility indicators\n\nUpdated every 5 minutes from live data feeds.'
+  );
+
+  infoBar.appendChild(infoLabel);
+  infoBar.appendChild(tooltipTrigger);
+  container.appendChild(infoBar);
+
   const wrapper = document.createElement('div');
   wrapper.className = 'risk-gauge-container';
 
@@ -284,6 +304,26 @@ function buildRiskBody(container: HTMLElement): void {
 
   wrapper.appendChild(factors);
   container.appendChild(wrapper);
+
+  // Data sources badge row
+  const sourcesRow = document.createElement('div');
+  sourcesRow.className = 'risk-data-sources';
+
+  const dataSources: Array<{ label: string; active: boolean }> = [
+    { label: 'USGS', active: true },
+    { label: 'GDACS', active: true },
+    { label: 'ACLED', active: false },
+    { label: 'MARKET', active: true },
+  ];
+
+  dataSources.forEach(({ label, active }) => {
+    const badge = document.createElement('span');
+    badge.className = `risk-source-badge${active ? ' active' : ''}`;
+    badge.textContent = label;
+    sourcesRow.appendChild(badge);
+  });
+
+  container.appendChild(sourcesRow);
 
   // ── Live data listeners ──────────────────────────────────────────────────────
 

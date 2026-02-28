@@ -171,35 +171,37 @@ body {
 
 /* Header bar for theme toggle and other controls */
 .header-bar {
-  position: absolute;
-  top: var(--spacing-md);
+  position: fixed;
+  top: 1rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
+  gap: 0.5rem;
+  z-index: 200;
   background: var(--bg-panel);
   border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
+  border-radius: 10px;
+  padding: 0.35rem 0.5rem;
   backdrop-filter: blur(12px);
-  z-index: var(--z-header);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
   transition: background var(--transition-base), border-color var(--transition-base);
 }
 
 .left-panel {
-  position: absolute;
-  top: var(--spacing-md);
-  left: var(--spacing-md);
-  width: 280px;
-  max-height: calc(100vh - var(--spacing-xl));
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 200px;
+  height: 100vh;
   background: var(--bg-panel);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-md);
+  border-right: 1px solid var(--border-primary);
   backdrop-filter: blur(12px);
-  z-index: var(--z-panels);
+  z-index: 100;
   overflow-y: auto;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
   transition: background var(--transition-base), border-color var(--transition-base);
 }
 
@@ -223,26 +225,23 @@ body {
    THEME TOGGLE BUTTON
    ============================================ */
 .theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.25rem 0.35rem;
+  border-radius: 6px;
+  transition: background 0.15s;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  background: var(--bg-button);
-  border: 1px solid var(--border-primary);
-  border-radius: var(--radius-sm);
+  line-height: 1;
   color: var(--text-accent);
-  font-size: 18px;
-  cursor: pointer;
-  transition: all var(--transition-fast);
   user-select: none;
 }
 
 .theme-toggle:hover {
   background: var(--bg-button-hover);
-  border-color: var(--border-hover);
-  box-shadow: var(--shadow-glow);
 }
 
 .theme-toggle:active {
@@ -832,6 +831,7 @@ pre {
 .market-fear-greed {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.4rem;
   padding: 0.6rem 1rem;
   border-top: 1px solid var(--border-secondary);
@@ -1002,6 +1002,71 @@ pre {
   height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
+}
+
+.risk-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem 0;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.risk-info-tooltip-trigger {
+  cursor: help;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  position: relative;
+}
+
+.risk-info-tooltip-trigger:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  right: 0;
+  top: 1.5rem;
+  width: 220px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  z-index: 1000;
+  white-space: pre-line;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 400;
+}
+
+.risk-data-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid var(--border-secondary);
+}
+
+.risk-source-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  border: 1px solid var(--border-secondary);
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.risk-source-badge.active {
+  opacity: 1;
+  color: var(--text-accent);
+  border-color: var(--border-primary);
+  background: var(--bg-button);
 }
 
 /* ============================================
@@ -1675,15 +1740,327 @@ kbd {
 .header-hint {
   font-size: 0.65rem;
   color: var(--text-muted);
-  border: 1px solid var(--border-secondary);
-  border-radius: var(--radius-sm);
-  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
   font-family: var(--font-mono);
   cursor: pointer;
-  transition: color var(--transition-fast), border-color var(--transition-fast);
+  transition: all 0.15s;
+  white-space: nowrap;
 }
 
 .header-hint:hover {
-  color: var(--text-secondary);
-  border-color: var(--border-primary);
+  background: var(--bg-button);
+  color: var(--text-accent);
+  border-color: var(--text-accent);
 }
+
+/* ============================================
+   LAYER CONTROLS PANEL
+   ============================================ */
+
+.layers-header {
+  padding: 1rem 1rem 0.75rem;
+  border-bottom: 1px solid var(--border-secondary);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-accent);
+  flex-shrink: 0;
+}
+
+.layer-category {
+  padding: 0.75rem 1rem 0.25rem;
+}
+
+.layer-category-label {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-left: 2px solid var(--border-secondary);
+  padding-left: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s, border-left-color 0.15s;
+  border-left: 2px solid transparent;
+  user-select: none;
+}
+
+.layer-row:hover {
+  background: var(--bg-button);
+}
+
+.layer-row.active {
+  border-left-color: var(--layer-color, var(--text-accent));
+}
+
+/* Toggle switch track */
+.layer-toggle-track {
+  width: 28px;
+  height: 14px;
+  border-radius: 7px;
+  background: var(--border-primary);
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.layer-row.active .layer-toggle-track {
+  background: var(--layer-color, var(--text-accent));
+}
+
+/* Toggle switch thumb */
+.layer-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s;
+}
+
+.layer-row.active .layer-toggle-thumb {
+  transform: translateX(14px);
+}
+
+/* Color glow dot */
+.layer-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.layer-icon {
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.layer-name {
+  font-size: 0.72rem;
+  flex: 1;
+  transition: color 0.15s;
+}
+
+.layer-row.active .layer-name {
+  color: var(--text-primary);
+}
+
+.layer-row:not(.active) .layer-name {
+  color: var(--text-muted);
+}
+
+/* Scrollbar for left panel */
+#left-panel::-webkit-scrollbar {
+  width: 4px;
+}
+#left-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+#left-panel::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 2px;
+}
+
+/* ============================================
+   ENTITY POPUP
+   ============================================ */
+.entity-popup {
+  position: fixed;
+  top: 50%;
+  right: 400px; /* clear the right panel (~380px + gap) */
+  transform: translateY(-50%) translateX(10px);
+  width: 280px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  backdrop-filter: blur(12px);
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  overflow: hidden;
+}
+
+.entity-popup.visible {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(-50%) translateX(0);
+}
+
+.entity-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem 0.5rem;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.entity-popup-type-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  background: var(--bg-button);
+  color: var(--text-accent);
+  border: 1px solid var(--border-primary);
+  text-transform: uppercase;
+}
+
+.entity-popup-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+.entity-popup-close:hover {
+  color: var(--text-primary);
+}
+
+.entity-popup-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 0.75rem 1rem 0.1rem;
+  line-height: 1.3;
+}
+
+.entity-popup-subtitle {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  padding: 0 1rem 0.75rem;
+}
+
+.entity-popup-fields {
+  padding: 0 1rem 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.entity-popup-field {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  padding: 0.4rem 0.5rem;
+}
+
+.entity-field-label {
+  display: block;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.15rem;
+  text-transform: uppercase;
+}
+
+.entity-field-value {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+
+.entity-popup-coords {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  padding: 0.5rem 1rem 0.75rem;
+  font-family: var(--font-mono);
+  border-top: 1px solid var(--border-secondary);
+}
+
+/* ============================================
+   PORTFOLIO — P&L SPARKLINE
+   ============================================ */
+
+.pnl-sparkline {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.sparkline-label {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.sparkline-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 40px;
+}
+
+.sparkline-bar {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  min-height: 3px;
+  transition: opacity 0.15s;
+}
+
+.sparkline-bar:hover { opacity: 0.7; }
+.sparkline-bar.positive { background: #4ade80; }
+.sparkline-bar.negative { background: #f87171; }
+
+/* ============================================
+   PORTFOLIO — STRATEGY ATTRIBUTION
+   ============================================ */
+
+.strategy-breakdown {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.strategy-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+}
+
+.strategy-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.strategy-name {
+  flex: 1;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.strategy-pnl {
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.strategy-pnl.positive { color: #4ade80; }
+.strategy-pnl.negative { color: #f87171; }

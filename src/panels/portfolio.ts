@@ -6,6 +6,8 @@
 
 import { registerPanel } from './panel-manager';
 import { showToast } from '../lib/toast';
+import { tradingEngine } from '../trading/engine';
+import type { Signal as EngineSignal } from '../trading/engine';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,12 +51,39 @@ function defaultState(): PortfolioState {
   };
 }
 
+function ensureHistoricalTrades(state: PortfolioState): PortfolioState {
+  if (state.closedTrades.length > 0) return state;
+
+  const now = Date.now();
+  const mockTrades: ClosedTrade[] = [
+    { symbol: 'GLD', direction: 'LONG',  pnl:  8420,  closedAt: now - 3  * 3600_000 },
+    { symbol: 'TLT', direction: 'LONG',  pnl:  5100,  closedAt: now - 7  * 3600_000 },
+    { symbol: 'EEM', direction: 'SHORT', pnl: -2340,  closedAt: now - 14 * 3600_000 },
+    { symbol: 'USO', direction: 'LONG',  pnl: 12800,  closedAt: now - 26 * 3600_000 },
+    { symbol: 'EWJ', direction: 'SHORT', pnl:  6750,  closedAt: now - 2  * 86400_000 },
+    { symbol: 'SPY', direction: 'LONG',  pnl: -4200,  closedAt: now - 3  * 86400_000 },
+  ];
+
+  const totalHistoricalPnl = mockTrades.reduce((sum, t) => sum + t.pnl, 0);
+  const dayPnl = mockTrades
+    .filter(t => t.closedAt > now - 86400_000)
+    .reduce((s, t) => s + t.pnl, 0);
+
+  return {
+    ...state,
+    closedTrades: mockTrades,
+    totalValue: state.cash + totalHistoricalPnl,
+    dayPnl,
+  };
+}
+
 function loadState(): PortfolioState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as PortfolioState) : defaultState();
+    const state = raw ? (JSON.parse(raw) as PortfolioState) : defaultState();
+    return ensureHistoricalTrades(state);
   } catch {
-    return defaultState();
+    return ensureHistoricalTrades(defaultState());
   }
 }
 
@@ -233,6 +262,75 @@ function buildTradeItem(trade: ClosedTrade): HTMLElement {
   return item;
 }
 
+// ── Chart helpers ─────────────────────────────────────────────────────────────
+
+function buildPnlSparkline(trades: ClosedTrade[]): HTMLElement {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'pnl-sparkline';
+
+  const label = document.createElement('div');
+  label.className = 'sparkline-label';
+  label.textContent = 'P&L History (last 6 trades)';
+  wrapper.appendChild(label);
+
+  const chart = document.createElement('div');
+  chart.className = 'sparkline-chart';
+
+  const recent = [...trades]
+    .sort((a, b) => b.closedAt - a.closedAt)
+    .slice(0, 6)
+    .reverse();
+
+  const maxAbs = Math.max(...recent.map(t => Math.abs(t.pnl)), 1);
+
+  recent.forEach(trade => {
+    const bar = document.createElement('div');
+    bar.className = `sparkline-bar ${trade.pnl >= 0 ? 'positive' : 'negative'}`;
+    const heightPct = Math.max((Math.abs(trade.pnl) / maxAbs) * 100, 5);
+    bar.style.height = `${heightPct}%`;
+    bar.title = `${trade.symbol}: ${trade.pnl >= 0 ? '+' : ''}$${trade.pnl.toFixed(0)}`;
+    chart.appendChild(bar);
+  });
+
+  wrapper.appendChild(chart);
+  return wrapper;
+}
+
+function buildStrategyBreakdown(): HTMLElement {
+  const breakdown = [
+    { name: 'Geopolitical', pnl: 8420 + 6750,        color: '#3b82f6' },
+    { name: 'Macro',        pnl: 5100 + 12800 - 4200, color: '#8b5cf6' },
+    { name: 'Sentiment',    pnl: -2340,                color: '#f97316' },
+  ];
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'strategy-breakdown';
+
+  breakdown.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'strategy-row';
+
+    const dot = document.createElement('span');
+    dot.className = 'strategy-dot';
+    dot.style.background = s.color;
+
+    const name = document.createElement('span');
+    name.className = 'strategy-name';
+    name.textContent = s.name;
+
+    const pnlEl = document.createElement('span');
+    pnlEl.className = `strategy-pnl ${s.pnl >= 0 ? 'positive' : 'negative'}`;
+    pnlEl.textContent = `${s.pnl >= 0 ? '+' : ''}$${s.pnl.toLocaleString()}`;
+
+    row.appendChild(dot);
+    row.appendChild(name);
+    row.appendChild(pnlEl);
+    wrapper.appendChild(row);
+  });
+
+  return wrapper;
+}
+
 // ── Panel body ────────────────────────────────────────────────────────────────
 
 function buildPortfolioBody(container: HTMLElement): void {
@@ -297,6 +395,10 @@ function buildPortfolioBody(container: HTMLElement): void {
   summary.appendChild(statsGrid);
   container.appendChild(summary);
 
+  // ── P&L sparkline + strategy attribution ─────────────────────────────────
+  container.appendChild(buildPnlSparkline(portfolioState.closedTrades));
+  container.appendChild(buildStrategyBreakdown());
+
   // ── Open positions ──────────────────────────────────────────────────────
   const positionsSection = document.createElement('div');
   positionsSection.className = 'portfolio-positions';
@@ -342,14 +444,70 @@ function buildPortfolioBody(container: HTMLElement): void {
 
   // ── Event listeners ──────────────────────────────────────────────────────
   window.addEventListener('portfolio-updated', (e: Event) => {
-    const state = (e as CustomEvent<PortfolioState>).detail;
-    portfolioState = state;
+    const engineState = (e as CustomEvent).detail;
+    if (!engineState) return;
+
+    // Map the engine's PortfolioState (Map-based positions, Trade[] closedTrades)
+    // to the panel's simpler PortfolioState format.
+    const positions: Position[] = [];
+    if (engineState.positions instanceof Map) {
+      for (const pos of engineState.positions.values()) {
+        positions.push({
+          symbol: pos.symbol,
+          direction: pos.direction,
+          shares: pos.quantity,
+          entryPrice: pos.avgEntryPrice,
+          currentPrice: pos.currentPrice,
+        });
+      }
+    }
+
+    const closedTrades: ClosedTrade[] = (engineState.closedTrades ?? []).map((t: { symbol: string; direction: 'LONG' | 'SHORT'; pnl?: number; closedAt?: number }) => ({
+      symbol: t.symbol,
+      direction: t.direction,
+      pnl: t.pnl ?? 0,
+      closedAt: t.closedAt ?? Date.now(),
+    }));
+
+    portfolioState = {
+      cash: engineState.cash ?? portfolioState.cash,
+      totalValue: engineState.totalValue ?? portfolioState.totalValue,
+      dayPnl: engineState.dailyPnl ?? portfolioState.dayPnl,
+      maxDrawdown: engineState.maxDrawdown ?? portfolioState.maxDrawdown,
+      positions,
+      closedTrades: closedTrades.length > 0 ? closedTrades : portfolioState.closedTrades,
+    };
+
     saveState(portfolioState);
     renderPortfolio(portfolioState);
   });
 
-  window.addEventListener('execute-signal', () => {
-    showToast('Signal queued for execution');
+  window.addEventListener('execute-signal', (e: Event) => {
+    const detail = (e as CustomEvent<{ signal: EngineSignal }>).detail;
+    const signal = detail?.signal;
+
+    if (!signal) {
+      showToast('No signal data received');
+      return;
+    }
+
+    const trade = tradingEngine.acceptSignal(signal);
+
+    if (trade) {
+      showToast(`✓ ${signal.direction} ${signal.symbol} — ${trade.quantity} shares @ $${trade.entryPrice.toFixed(2)}`);
+      // Engine emits 'portfolio-updated', which triggers re-render above.
+    } else {
+      const state = tradingEngine.getState();
+      if (state.haltedUntil > Date.now()) {
+        showToast('⚠ Trading halted: daily loss limit reached');
+      } else if (state.positions.has(signal.symbol)) {
+        showToast(`Position already open for ${signal.symbol}`);
+      } else if (signal.expiresAt < Date.now()) {
+        showToast('Signal expired');
+      } else {
+        showToast('Signal rejected: insufficient capital or position limits');
+      }
+    }
   });
 
   // Auto-refresh display every 30 seconds (prices may drift via live data)

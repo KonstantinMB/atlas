@@ -38,11 +38,11 @@ function createChokepointsLayer() {
     filled: true,
     radiusScale: 1,
     radiusMinPixels: 6,
-    radiusMaxPixels: 20,
+    radiusMaxPixels: 22,
     lineWidthMinPixels: 2,
     getPosition: (d) => [d.lon, d.lat, 0],
     getRadius: 8,
-    getFillColor: [250, 204, 21, 230],
+    getFillColor: [250, 204, 21, 170],
     getLineColor: [250, 204, 21, 255],
   });
 }

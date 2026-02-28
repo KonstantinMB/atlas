@@ -17,6 +17,8 @@ export interface Signal {
   reasoning: string;
   targetReturn: number; // e.g. 0.15 = 15%
   stopLoss: number;    // e.g. 0.05 = 5% (always positive, applied as loss)
+  takeProfit: number;  // same as targetReturn; required by engine
+  expiresAt: number;   // epoch ms — engine rejects expired signals
   timestamp: number;
 }
 
@@ -32,6 +34,8 @@ const MOCK_SIGNALS: Signal[] = [
     reasoning: 'Safe haven demand amid rising CII in Middle East. Conflict convergence detected.',
     targetReturn: 0.15,
     stopLoss: 0.05,
+    takeProfit: 0.15,
+    expiresAt: Date.now() + 4 * 60 * 60 * 1000,
     timestamp: Date.now() - 12 * 60_000,
   },
   {
@@ -43,6 +47,8 @@ const MOCK_SIGNALS: Signal[] = [
     reasoning: 'GDELT tone score deteriorating across EM Asia. Rolling 4h average at -3.2.',
     targetReturn: 0.08,
     stopLoss: 0.04,
+    takeProfit: 0.08,
+    expiresAt: Date.now() + 4 * 60 * 60 * 1000,
     timestamp: Date.now() - 34 * 60_000,
   },
   {
@@ -54,6 +60,8 @@ const MOCK_SIGNALS: Signal[] = [
     reasoning: 'Yield curve inversion deepening. 2Y-10Y spread at -45bps. Flight to duration.',
     targetReturn: 0.10,
     stopLoss: 0.03,
+    takeProfit: 0.10,
+    expiresAt: Date.now() + 4 * 60 * 60 * 1000,
     timestamp: Date.now() - 58 * 60_000,
   },
 ];
