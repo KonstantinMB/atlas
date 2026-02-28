@@ -95,63 +95,71 @@ function computeRiskScore(
 function buildGaugeSVG(score: number, color: string): SVGElement {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg') as SVGSVGElement;
-  svg.setAttribute('viewBox', '0 0 120 70');
+
+  // viewBox has 8px padding on all sides to fully contain the stroke (stroke-width 10, half = 5)
+  // Arc center: (100, 90), radius: 80, arc from (20,90) to (180,90)
+  // With padding: viewBox = "12 0 176 100"
+  svg.setAttribute('viewBox', '12 2 176 98');
   svg.setAttribute('xmlns', ns);
   svg.style.width = '100%';
-  svg.style.maxWidth = '180px';
-  svg.style.overflow = 'visible';
+  svg.style.maxWidth = '220px';
+  svg.style.display = 'block';
+
+  const cx = 100, cy = 90, r = 80;
+  const startX = cx - r; // 20
+  const endX   = cx + r; // 180
 
   // Background arc (grey track)
   const track = document.createElementNS(ns, 'path');
-  track.setAttribute('d', 'M 10 65 A 50 50 0 0 1 110 65');
+  track.setAttribute('d', `M ${startX} ${cy} A ${r} ${r} 0 0 1 ${endX} ${cy}`);
   track.setAttribute('fill', 'none');
   track.setAttribute('stroke', 'rgba(255,255,255,0.08)');
-  track.setAttribute('stroke-width', '8');
+  track.setAttribute('stroke-width', '10');
   track.setAttribute('stroke-linecap', 'round');
   svg.appendChild(track);
 
   // Filled arc proportional to score (0–100 maps to 0–π)
   const angle = (score / 100) * Math.PI;
-  const cx = 60, cy = 65, r = 50;
   const x = cx + r * Math.cos(Math.PI - angle);
   const y = cy - r * Math.sin(Math.PI - angle);
   const largeArc = angle > Math.PI / 2 ? 1 : 0;
 
   const fill = document.createElementNS(ns, 'path');
-  fill.setAttribute('d', `M 10 65 A 50 50 0 ${largeArc} 1 ${x.toFixed(2)} ${y.toFixed(2)}`);
+  fill.setAttribute('d', `M ${startX} ${cy} A ${r} ${r} 0 ${largeArc} 1 ${x.toFixed(2)} ${y.toFixed(2)}`);
   fill.setAttribute('fill', 'none');
   fill.setAttribute('stroke', color);
-  fill.setAttribute('stroke-width', '8');
+  fill.setAttribute('stroke-width', '10');
   fill.setAttribute('stroke-linecap', 'round');
   svg.appendChild(fill);
 
-  // Score label
+  // Score label (centered in the arc)
   const scoreText = document.createElementNS(ns, 'text');
-  scoreText.setAttribute('x', '60');
-  scoreText.setAttribute('y', '62');
+  scoreText.setAttribute('x', String(cx));
+  scoreText.setAttribute('y', String(cy - 10));
   scoreText.setAttribute('text-anchor', 'middle');
-  scoreText.setAttribute('font-size', '18');
+  scoreText.setAttribute('font-size', '26');
   scoreText.setAttribute('font-weight', '700');
   scoreText.setAttribute('fill', color);
   scoreText.setAttribute('font-family', 'SF Mono, Monaco, monospace');
   scoreText.textContent = String(score);
   svg.appendChild(scoreText);
 
-  // Min/max labels
+  // Min label
   const minLabel = document.createElementNS(ns, 'text');
-  minLabel.setAttribute('x', '8');
-  minLabel.setAttribute('y', '70');
+  minLabel.setAttribute('x', String(startX));
+  minLabel.setAttribute('y', String(cy + 14));
   minLabel.setAttribute('text-anchor', 'middle');
-  minLabel.setAttribute('font-size', '8');
+  minLabel.setAttribute('font-size', '10');
   minLabel.setAttribute('fill', 'rgba(255,255,255,0.3)');
   minLabel.textContent = '0';
   svg.appendChild(minLabel);
 
+  // Max label
   const maxLabel = document.createElementNS(ns, 'text');
-  maxLabel.setAttribute('x', '112');
-  maxLabel.setAttribute('y', '70');
+  maxLabel.setAttribute('x', String(endX));
+  maxLabel.setAttribute('y', String(cy + 14));
   maxLabel.setAttribute('text-anchor', 'middle');
-  maxLabel.setAttribute('font-size', '8');
+  maxLabel.setAttribute('font-size', '10');
   maxLabel.setAttribute('fill', 'rgba(255,255,255,0.3)');
   maxLabel.textContent = '100';
   svg.appendChild(maxLabel);

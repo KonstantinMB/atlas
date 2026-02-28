@@ -593,6 +593,12 @@ pre {
   transition: max-height 0.3s ease;
 }
 
+/* Allow SVG gauges (strategic risk) to render without clipping */
+.panel-body > .risk-gauge-container,
+.panel-body > .risk-gauge-svg-wrap {
+  overflow: visible;
+}
+
 .panel-body.collapsed {
   max-height: 0 !important;
 }
@@ -1103,12 +1109,16 @@ pre {
 .risk-gauge-container {
   padding: 1rem 1rem 0.75rem;
   text-align: center;
+  overflow: visible;
 }
 
 .risk-gauge-svg-wrap {
   display: flex;
   justify-content: center;
+  align-items: center;
   margin-bottom: 0.25rem;
+  overflow: visible;
+  padding: 0 0.5rem;
 }
 
 .risk-level-display {
