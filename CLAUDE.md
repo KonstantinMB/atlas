@@ -12,7 +12,7 @@ Study https://github.com/koala73/worldmonitor for patterns. It is an AGPL-3.0 op
 - Globe: deck.gl layers on dark MapLibre basemap
 - News: RSS proxy with domain allowlist, source tier weighting
 - AI pipeline: Groq → OpenRouter → browser T5 fallback chain with Redis dedup
-
+ 
 When building a specific component, fetch the relevant WorldMonitor source file from GitHub for reference:
 - Edge functions: https://github.com/koala73/worldmonitor/tree/main/api
 - Architecture docs: https://github.com/koala73/worldmonitor/blob/main/README.md
