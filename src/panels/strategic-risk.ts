@@ -143,8 +143,8 @@ function buildGaugeSVG(score: number, color: string): SVGSVGElement {
   const svg = document.createElementNS(ns, 'svg') as SVGSVGElement;
 
   // Dimensions — wide semicircle with room for score text
-  const W = 240, H = 148;
-  const cx = 120, cy = 118, r = 90;
+  const W = 240, H = 158;
+  const cx = 120, cy = 116, r = 90;
   const SW = 18;   // stroke width
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.setAttribute('width', '100%');
@@ -257,9 +257,10 @@ function buildGaugeSVG(score: number, color: string): SVGSVGElement {
   }
 
   // ── Score number ─────────────────────────────────────────────────────────
+  // Positioned well below the arc peak (cy - r) so there's clear breathing room
   const scoreText = document.createElementNS(ns, 'text');
   scoreText.setAttribute('x', String(cx));
-  scoreText.setAttribute('y', String(cy - 32));
+  scoreText.setAttribute('y', String(cy - 8));
   scoreText.setAttribute('text-anchor', 'middle');
   scoreText.setAttribute('font-size', '52');
   scoreText.setAttribute('font-weight', '800');
@@ -272,7 +273,7 @@ function buildGaugeSVG(score: number, color: string): SVGSVGElement {
   // "/100" label
   const subText = document.createElementNS(ns, 'text');
   subText.setAttribute('x', String(cx));
-  subText.setAttribute('y', String(cy - 10));
+  subText.setAttribute('y', String(cy + 14));
   subText.setAttribute('text-anchor', 'middle');
   subText.setAttribute('font-size', '11');
   subText.setAttribute('fill', 'rgba(255,255,255,0.35)');
@@ -284,7 +285,7 @@ function buildGaugeSVG(score: number, color: string): SVGSVGElement {
   const level = getRiskLevel(score);
   const lvlText = document.createElementNS(ns, 'text');
   lvlText.setAttribute('x', String(cx));
-  lvlText.setAttribute('y', String(cy + 16));
+  lvlText.setAttribute('y', String(cy + 30));
   lvlText.setAttribute('text-anchor', 'middle');
   lvlText.setAttribute('font-size', '10');
   lvlText.setAttribute('font-weight', '700');
