@@ -462,6 +462,15 @@ export class PortfolioManager {
       const data = JSON.parse(raw) as StoredPortfolio;
       // Reject stale data older than 7 days
       if (Date.now() - data.savedAt > 7 * 24 * 60 * 60 * 1000) return null;
+      // Filter out malformed positions missing required fields (from schema migrations)
+      data.positions = (data.positions ?? []).filter(
+        p =>
+          p &&
+          typeof p.direction === 'string' &&
+          typeof p.marketValue === 'number' &&
+          typeof p.quantity === 'number' &&
+          typeof p.symbol === 'string'
+      );
       return data;
     } catch {
       return null;
@@ -478,7 +487,7 @@ export class PortfolioManager {
   }
 
   private appendEquityPoint(): void {
-    const posValue = Array.from(this.positions.values()).reduce((s, p) => s + p.marketValue, 0);
+    const posValue = Array.from(this.positions.values()).reduce((s, p) => s + (p?.marketValue ?? 0), 0);
     const total = this.cash + posValue;
     this.equityCurve.push({
       timestamp: Date.now(),

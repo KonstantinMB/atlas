@@ -75,10 +75,12 @@ export const PAPER_CONFIG = {
 } as const;
 
 const STORAGE_KEY = 'atlas-portfolio';
+const STORAGE_VERSION = 2; // bump when Position interface changes
 
 // ── Serialisation helpers ──────────────────────────────────────────────────────
 
 interface StoredState {
+  v?: number;
   cash: number;
   totalValue: number;
   positions: [string, Position][];
@@ -135,17 +137,35 @@ export class TradingEngine {
       if (!raw) return null;
 
       const data = JSON.parse(raw) as StoredState;
+
+      // Clear stale data from older versions that used a different Position shape
+      if ((data.v ?? 0) < STORAGE_VERSION) {
+        console.warn('[TradingEngine] Stale localStorage version — clearing portfolio data');
+        localStorage.removeItem(STORAGE_KEY);
+        return null;
+      }
+
+      // Filter out any malformed positions missing required fields
+      const validPositions: [string, Position][] = (data.positions ?? []).filter(
+        ([, pos]) =>
+          pos &&
+          typeof pos.direction === 'string' &&
+          typeof pos.marketValue === 'number' &&
+          typeof pos.quantity === 'number' &&
+          typeof pos.avgEntryPrice === 'number'
+      );
+
       const state: PortfolioState = {
-        cash: data.cash,
-        totalValue: data.totalValue,
-        positions: new Map(data.positions),
-        openTrades: data.openTrades,
-        closedTrades: data.closedTrades,
-        signals: data.signals,
-        dailyPnl: data.dailyPnl,
-        totalPnl: data.totalPnl,
-        maxDrawdown: data.maxDrawdown,
-        haltedUntil: data.haltedUntil,
+        cash: data.cash ?? PAPER_CONFIG.startingCapital,
+        totalValue: data.totalValue ?? PAPER_CONFIG.startingCapital,
+        positions: new Map(validPositions),
+        openTrades: data.openTrades ?? [],
+        closedTrades: data.closedTrades ?? [],
+        signals: data.signals ?? [],
+        dailyPnl: data.dailyPnl ?? 0,
+        totalPnl: data.totalPnl ?? 0,
+        maxDrawdown: data.maxDrawdown ?? 0,
+        haltedUntil: data.haltedUntil ?? 0,
       };
       return {
         state,
@@ -160,6 +180,7 @@ export class TradingEngine {
   private saveState(): void {
     try {
       const stored: StoredState = {
+        v: STORAGE_VERSION,
         cash: this.state.cash,
         totalValue: this.state.totalValue,
         positions: Array.from(this.state.positions.entries()),
@@ -182,7 +203,7 @@ export class TradingEngine {
   private computeTotalValue(): number {
     let posValue = 0;
     for (const pos of this.state.positions.values()) {
-      posValue += pos.marketValue;
+      posValue += pos?.marketValue ?? 0;
     }
     return this.state.cash + posValue;
   }

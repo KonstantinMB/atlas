@@ -466,9 +466,9 @@ function renderPositionsTable(snap: PortfolioSnapshot): void {
     return;
   }
 
-  const sorted = [...snap.positions].sort(
-    (a, b) => Math.abs(b.marketValue) - Math.abs(a.marketValue)
-  );
+  const sorted = [...snap.positions]
+    .filter(p => p && typeof p.direction === 'string' && typeof p.marketValue === 'number')
+    .sort((a, b) => Math.abs(b.marketValue) - Math.abs(a.marketValue));
 
   for (const pos of sorted) {
     posTableBodyEl.appendChild(buildPositionRow(pos, snap.totalValue));
@@ -516,6 +516,8 @@ function renderLegacyPositions(positions: Array<{ symbol: string; direction: str
   if (!posTableBodyEl) return;
   posTableBodyEl.innerHTML = '';
   for (const pos of positions) {
+    // Skip malformed positions from stale localStorage
+    if (!pos || typeof pos.direction !== 'string' || typeof pos.marketValue !== 'number') continue;
     const isLong   = pos.direction === 'LONG';
     const isProfit = pos.unrealizedPnl >= 0;
     const sizePct  = totalValue > 0 ? Math.abs(pos.marketValue) / totalValue : 0;
