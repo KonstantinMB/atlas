@@ -801,7 +801,7 @@ pre {
 }
 
 .news-feed-scroll {
-  max-height: 320px;
+  max-height: 480px;
   overflow-y: auto;
 }
 
@@ -881,6 +881,50 @@ pre {
 
 .news-location {
   color: var(--text-accent);
+}
+
+.news-time {
+  color: var(--text-muted);
+}
+
+.news-src-count {
+  color: var(--text-tertiary);
+  margin-left: auto;
+}
+
+/* Severity left-border accent on news items */
+.news-item.sev-critical { border-left: 2px solid var(--status-critical); }
+.news-item.sev-high     { border-left: 2px solid var(--status-high); }
+.news-item.sev-medium   { border-left: 2px solid var(--status-medium); }
+.news-item.sev-low      { border-left: 2px solid transparent; }
+
+/* Skeleton loading placeholders */
+.news-skeleton {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.news-skel-line {
+  height: 0.7rem;
+  border-radius: 3px;
+  background: linear-gradient(90deg,
+    var(--bg-input) 25%,
+    rgba(255,255,255,0.04) 50%,
+    var(--bg-input) 75%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.4s infinite;
+}
+
+.news-skel-line.short  { width: 35%; }
+.news-skel-line.long   { width: 90%; }
+.news-skel-line.medium { width: 60%; }
+
+@keyframes skel-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* ── Market Radar ── */
