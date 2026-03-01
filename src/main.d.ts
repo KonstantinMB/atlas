@@ -1,5 +1,5 @@
 /**
- * Atlas - Global Intelligence Platform
+ * YC Hedge Fund - Global Intelligence Platform
  * Entry point for the application
  */
 export {};

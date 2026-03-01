@@ -1,4 +1,4 @@
-# Atlas Theme Color Reference
+# YC Hedge Fund Theme Color Reference
 
 ## Quick Comparison
 

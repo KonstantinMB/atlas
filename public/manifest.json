@@ -1,6 +1,6 @@
 {
-  "name": "Atlas - Global Intelligence",
-  "short_name": "Atlas",
+  "name": "YC Hedge Fund - Global Intelligence",
+  "short_name": "YC Hedge Fund",
   "description": "AI-powered global intelligence dashboard with real-time geopolitical monitoring and paper trading",
   "start_url": "/",
   "display": "standalone",
@@ -29,7 +29,7 @@
   "categories": ["finance", "news", "productivity"],
   "shortcuts": [
     {
-      "name": "Open Atlas",
+      "name": "Open YC Hedge Fund",
       "url": "/",
       "description": "Open the intelligence dashboard"
     }

@@ -193,7 +193,7 @@ function buildAIInsightsBody(container: HTMLElement): void {
   briefTextEl = document.createElement('div');
   briefTextEl.className = 'ai-brief-text';
   briefTextEl.textContent =
-    'Atlas AI is monitoring global events. Intelligence briefs will be generated automatically ' +
+    'YC Hedge Fund AI is monitoring global events. Intelligence briefs will be generated automatically ' +
     'once live data feeds are connected. Tracking geopolitical developments across all regions.';
 
   topicsContainerEl = document.createElement('div');

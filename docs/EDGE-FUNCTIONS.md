@@ -2,7 +2,7 @@
 
 ## Overview
 
-Project Atlas uses Vercel Edge Functions as the API layer. This provides:
+YC Hedge Fund uses Vercel Edge Functions as the API layer. This provides:
 - Global low-latency execution (edge runtime)
 - Zero cold starts
 - Automatic CORS handling

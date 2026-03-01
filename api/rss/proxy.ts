@@ -93,7 +93,7 @@ export default withCors(async (req: Request) => {
     const res = await fetch(feedUrl, {
       headers: {
         Accept: 'application/rss+xml, application/xml, text/xml, */*',
-        'User-Agent': 'Atlas-RSS-Proxy/1.0',
+        'User-Agent': 'YC-Hedge-Fund-RSS-Proxy/1.0',
       },
     });
 

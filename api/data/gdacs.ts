@@ -121,7 +121,7 @@ async function fetchGdacs(): Promise<DisasterAlert[]> {
   // Try RSS first
   try {
     const res = await fetch(GDACS_URL, {
-      headers: { Accept: 'application/xml, text/xml, */*', 'User-Agent': 'Atlas/1.0' },
+      headers: { Accept: 'application/xml, text/xml, */*', 'User-Agent': 'YC-Hedge-Fund/1.0' },
     });
     if (res.ok) {
       const xml = await res.text();
@@ -133,7 +133,7 @@ async function fetchGdacs(): Promise<DisasterAlert[]> {
   // Fallback: JSON API
   try {
     const res = await fetch(GDACS_JSON_URL, {
-      headers: { Accept: 'application/json', 'User-Agent': 'Atlas/1.0' },
+      headers: { Accept: 'application/json', 'User-Agent': 'YC-Hedge-Fund/1.0' },
     });
     if (!res.ok) return [];
     const json = await res.json() as { features?: Array<{ properties: Record<string, unknown>; geometry: { coordinates: [number, number] } }> };

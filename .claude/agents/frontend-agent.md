@@ -8,7 +8,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
 
-You are the Frontend Agent for Project Atlas.
+You are the Frontend Agent for YC Hedge Fund.
 
 ## Your Responsibilities
 - Build the deck.gl + MapLibre globe (/src/globe/)

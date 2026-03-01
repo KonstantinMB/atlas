@@ -1,5 +1,5 @@
 /**
- * Atlas - Global Intelligence Platform
+ * YC Hedge Fund - Global Intelligence Platform
  * Entry point — final integration
  *
  * Boot order:
@@ -55,7 +55,7 @@ async function initGlobe(): Promise<void> {
     await import('./globe/layers/risk-heatmap');
 
     const globe = initGlobeInstance(container);
-    console.log('[Atlas] Globe initialised');
+    console.log('[YC Hedge Fund] Globe initialised');
 
     const { getLayerRegistry } = await import('./globe/layer-registry');
     const registry = getLayerRegistry();
@@ -74,7 +74,7 @@ async function initGlobe(): Promise<void> {
       if (layer) globe.registerLayer(layerId, layer);
     });
 
-    console.log('[Atlas] Layers:', activeLayerIds);
+    console.log('[YC Hedge Fund] Layers:', activeLayerIds);
 
     const { initLayerControls } = await import('./globe/controls');
     initLayerControls();
@@ -83,7 +83,7 @@ async function initGlobe(): Promise<void> {
     window.addEventListener('resize', () => globe.resize());
 
   } catch (err) {
-    console.error('[Atlas] Globe init failed:', err);
+    console.error('[YC Hedge Fund] Globe init failed:', err);
   }
 }
 
@@ -114,16 +114,16 @@ async function initPanels(): Promise<void> {
       const mod = await panel.loader();
       const initFn = mod[panel.fn] as (() => void) | undefined;
       if (typeof initFn === 'function') initFn();
-      else console.warn(`[Atlas] Panel "${panel.name}" export "${panel.fn}" not found`);
+      else console.warn(`[YC Hedge Fund] Panel "${panel.name}" export "${panel.fn}" not found`);
     } catch (err) {
-      console.error(`[Atlas] Panel "${panel.name}" failed to load:`, err);
+      console.error(`[YC Hedge Fund] Panel "${panel.name}" failed to load:`, err);
     }
   }
 
-  console.log('[Atlas] Panels initialised');
+  console.log('[YC Hedge Fund] Panels initialised');
 
   dataService.startPolling();
-  console.log('[Atlas] Data polling started');
+  console.log('[YC Hedge Fund] Data polling started');
 }
 
 // ── WebSocket relay ───────────────────────────────────────────────────────────
@@ -148,7 +148,7 @@ function initWebSockets(): void {
   });
 
   wsManager.on('open', () => {
-    console.log('[Atlas] WebSocket relay connected');
+    console.log('[YC Hedge Fund] WebSocket relay connected');
     wsManager!.send(JSON.stringify({ type: 'subscribe', channels: ['ais', 'aircraft'] }));
   });
 
@@ -430,7 +430,7 @@ function initRightPanelResize(): void {
     localStorage.setItem(RIGHT_PANEL_WIDTH_KEY, panel.style.width.replace('px', ''));
   });
 
-  console.log('[Atlas] Right panel resize initialised');
+  console.log('[YC Hedge Fund] Right panel resize initialised');
 }
 
 // ── Left panel drag-to-resize ─────────────────────────────────────────────────
@@ -515,7 +515,7 @@ function initLeftPanelResize(): void {
     localStorage.setItem(LEFT_PANEL_WIDTH_KEY, panel.style.width.replace('px', ''));
   });
 
-  console.log('[Atlas] Left panel resize initialised');
+  console.log('[YC Hedge Fund] Left panel resize initialised');
 }
 
 // ── Keyboard shortcuts ────────────────────────────────────────────────────────
@@ -633,20 +633,20 @@ async function initKeyboardShortcuts(): Promise<void> {
           btn.classList.add('pt-killed');
           sEl.textContent = 'KILLED';
         }
-        console.warn('[Atlas] KILL SWITCH ACTIVATED — all auto-trading halted');
+        console.warn('[YC Hedge Fund] KILL SWITCH ACTIVATED — all auto-trading halted');
         showToast('🛑 KILL SWITCH — all trading halted. Press Esc again to reset.', 4000);
         break;
       }
     }
   });
 
-  console.log('[Atlas] Keyboard shortcuts: T=portfolio  S=signals  P=performance  Space=pause  Esc=kill');
+  console.log('[YC Hedge Fund] Keyboard shortcuts: T=portfolio  S=signals  P=performance  Space=pause  Esc=kill');
 }
 
 // ── Main init ─────────────────────────────────────────────────────────────────
 
 async function init(): Promise<void> {
-  console.log('[Atlas] Initialising Global Intelligence Platform…');
+  console.log('[YC Hedge Fund] Initialising Global Intelligence Platform…');
 
   // Vercel Analytics
   try {
@@ -675,7 +675,7 @@ async function init(): Promise<void> {
     const { initIntelligenceEngine } = await import('./intelligence/index');
     initIntelligenceEngine();
   } catch (err) {
-    console.error('[Atlas] Intelligence engine failed:', err);
+    console.error('[YC Hedge Fund] Intelligence engine failed:', err);
   }
 
   // UI controls
@@ -693,13 +693,13 @@ async function init(): Promise<void> {
     const cmdHint = document.getElementById('cmd-palette-hint');
     if (cmdHint) cmdHint.addEventListener('click', () => commandPalette.open());
   } catch (err) {
-    console.warn('[Atlas] Command palette unavailable:', err);
+    console.warn('[YC Hedge Fund] Command palette unavailable:', err);
   }
 
   // WebSocket relay (defer to let prices load first)
   setTimeout(initWebSockets, 1_000);
 
-  console.log('[Atlas] Initialisation complete — globe + intelligence + trading active');
+  console.log('[YC Hedge Fund] Initialisation complete — globe + intelligence + trading active');
 }
 
 // DOM ready guard

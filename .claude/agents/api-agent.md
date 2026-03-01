@@ -8,7 +8,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
 
-You are the API Agent for Project Atlas.
+You are the API Agent for YC Hedge Fund.
 
 ## Your Responsibilities
 - Build Vercel Edge Functions in /api/ directory

@@ -1,5 +1,5 @@
 /**
- * Atlas Relay Server
+ * YC Hedge Fund Relay Server
  * Express + WebSocket server deployed on Railway.
  *
  * Multiplexes:
@@ -38,7 +38,7 @@ app.get('/health', (_req, res) => {
 });
 
 app.get('/', (_req, res) => {
-  res.json({ service: 'atlas-relay', version: '1.0.0' });
+  res.json({ service: 'yc-hedge-fund-relay', version: '1.0.0' });
 });
 
 // --- Client registry ------------------------------------------------------

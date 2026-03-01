@@ -1,5 +1,5 @@
 /**
- * Atlas - Base Styles
+ * YC Hedge Fund - Base Styles
  * Dark/Light theme support with CSS variables
  * Reference: WorldMonitor aesthetic (dark mode)
  */
@@ -172,6 +172,24 @@ body {
   width: 100%;
   height: 100%;
   z-index: var(--z-globe);
+}
+
+/* Header bar logo */
+.header-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.15rem;
+  border-radius: 6px;
+  transition: opacity 0.2s;
+}
+.header-logo:hover {
+  opacity: 0.85;
+}
+.header-logo img {
+  display: block;
+  width: 32px;
+  height: 32px;
 }
 
 /* Header bar for theme toggle and other controls */

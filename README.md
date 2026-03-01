@@ -1,4 +1,4 @@
-# Atlas — Global Intelligence Platform
+# YC Hedge Fund — Global Intelligence Platform
 
 > AI-powered geopolitical intelligence dashboard with real-time data streams, client-side analytics, and paper trading capabilities.
 
@@ -8,7 +8,7 @@
 
 ## Overview
 
-Atlas is a WorldMonitor-class intelligence dashboard built entirely with vanilla TypeScript and no frontend framework. It renders a 3D globe (deck.gl + MapLibre) overlaid with 12+ live data layers, runs a client-side intelligence engine (Country Instability Index, convergence detection, anomaly detection), and pairs it with a full paper trading engine that lets you watch geopolitical events translate directly into simulated trading signals and portfolio P&L.
+YC Hedge Fund is a WorldMonitor-class intelligence dashboard built entirely with vanilla TypeScript and no frontend framework. It renders a 3D globe (deck.gl + MapLibre) overlaid with 12+ live data layers, runs a client-side intelligence engine (Country Instability Index, convergence detection, anomaly detection), and pairs it with a full paper trading engine that lets you watch geopolitical events translate directly into simulated trading signals and portfolio P&L.
 
 The unique differentiator: the "Globe Risk Heatmap" makes your portfolio exposure **physically visible** — countries glow red when your paper positions are geopolitically exposed there, and flash yellow when a new signal fires for that region.
 
@@ -19,7 +19,7 @@ The unique differentiator: the "Globe Risk Heatmap" makes your portfolio exposur
 ```bash
 # 1. Clone
 git clone https://github.com/KonstantinMB/atlas.git
-cd atlas
+cd atlas  # or yc-hedge-fund if repo is renamed
 
 # 2. Install dependencies
 npm install

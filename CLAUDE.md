@@ -1,4 +1,4 @@
-# CLAUDE.md — Project Atlas
+# CLAUDE.md — YC Hedge Fund
 
 ## What This Project Is
 An AI-powered global intelligence dashboard with paper trading capabilities. WorldMonitor-class frontend (deck.gl globe, real-time data, intelligence analytics) with hedge fund strategy visualization built in. Built from scratch — no forks.
@@ -39,7 +39,7 @@ When building a specific component, fetch the relevant WorldMonitor source file 
 
 ## File Structure
 ```
-atlas/
+yc-hedge-fund/
 ├── CLAUDE.md                    ← You are here
 ├── api/                         ← Vercel Edge Functions
 │   ├── _cors.ts                 ← CORS middleware (allowlist our domains + localhost)

@@ -83,7 +83,7 @@ async function probeOpenSky(): Promise<boolean> {
     const res = await fetch('https://opensky-network.org/', {
       method: 'HEAD',
       signal: AbortSignal.timeout(8_000),
-      headers: { 'User-Agent': 'Atlas Intelligence Platform (connectivity-probe)' },
+      headers: { 'User-Agent': 'YC Hedge Fund Intelligence Platform (connectivity-probe)' },
     });
     return res.status < 500;
   } catch {
@@ -123,7 +123,7 @@ export class OpenSkyPoller {
 
     try {
       const headers: Record<string, string> = {
-        'User-Agent': 'Atlas Intelligence Platform (atlas-relay)',
+        'User-Agent': 'YC Hedge Fund Intelligence Platform (yc-hedge-fund-relay)',
       };
 
       // Prefer OAuth2 client credentials; fall back to Basic Auth (legacy)

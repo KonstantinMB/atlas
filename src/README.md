@@ -1,4 +1,4 @@
-# Atlas Frontend (Phase 0)
+# YC Hedge Fund Frontend (Phase 0)
 
 ## Structure Created
 

@@ -1,6 +1,6 @@
 # How to Add New Globe Layers
 
-Quick reference guide for adding new data layers to the Project Atlas globe.
+Quick reference guide for adding new data layers to the YC Hedge Fund globe.
 
 ## Layer File Template
 

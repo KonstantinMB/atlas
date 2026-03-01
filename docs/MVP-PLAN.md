@@ -1,4 +1,4 @@
-# Project Atlas — MVP Implementation Plan
+# YC Hedge Fund — MVP Implementation Plan
 
 ## The $50/mo Intelligence Platform with Paper Trading
 

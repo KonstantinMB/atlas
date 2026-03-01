@@ -74,7 +74,7 @@ function normalizeAdsbFi(raw: AdsbFiResponse): Aircraft[] {
 
 async function fetchAdsbFi(): Promise<Aircraft[]> {
   const res = await fetch('https://api.adsb.fi/v1/flights', {
-    headers: { Accept: 'application/json', 'User-Agent': 'Atlas/1.0' },
+    headers: { Accept: 'application/json', 'User-Agent': 'YC-Hedge-Fund/1.0' },
     signal: AbortSignal.timeout(8_000),
   });
   if (!res.ok) throw new Error(`adsb.fi ${res.status}`);
@@ -145,7 +145,7 @@ function normalizeOpenSky(states: StateVector[]): Aircraft[] {
 
 async function fetchOpenSky(): Promise<Aircraft[]> {
   const token = await fetchOpenSkyToken();
-  const headers: Record<string, string> = { 'User-Agent': 'Atlas/1.0' };
+  const headers: Record<string, string> = { 'User-Agent': 'YC-Hedge-Fund/1.0' };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(OPENSKY_URL, {

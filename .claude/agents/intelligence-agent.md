@@ -9,7 +9,7 @@ tools: Read, Write, Edit, Bash, Glob, Grep
 model: sonnet
 ---
 
-You are the Intelligence Agent for Project Atlas.
+You are the Intelligence Agent for YC Hedge Fund.
 
 ## Your Responsibilities
 - Implement all intelligence analytics in /src/intelligence/

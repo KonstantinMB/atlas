@@ -1,5 +1,5 @@
 /**
- * Atlas - Command Palette (Cmd+K)
+ * YC Hedge Fund - Command Palette (Cmd+K)
  * VS Code-style command palette for quick navigation and actions
  */
 

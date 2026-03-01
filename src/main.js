@@ -1,5 +1,5 @@
 /**
- * Atlas - Global Intelligence Platform
+ * YC Hedge Fund - Global Intelligence Platform
  * Entry point for the application
  */
 import { initState } from './lib/state';
@@ -16,7 +16,7 @@ function initGlobe() {
         console.error('Globe container not found');
         return;
     }
-    console.log('[Atlas] Globe initialization placeholder - deck.gl setup will go here');
+    console.log('[YC Hedge Fund] Globe initialization placeholder - deck.gl setup will go here');
     // TODO: Initialize deck.gl + MapLibre GL JS
     // TODO: Load static layers from /src/data/
 }
@@ -29,7 +29,7 @@ function initPanels() {
         console.error('Right panel container not found');
         return;
     }
-    console.log('[Atlas] Panel initialization placeholder');
+    console.log('[YC Hedge Fund] Panel initialization placeholder');
     // TODO: Initialize collapsible panels
     // TODO: Load real-time data feeds
 }
@@ -38,21 +38,21 @@ function initPanels() {
  */
 function initWebSockets() {
     // Railway relay WebSocket will be initialized here
-    console.log('[Atlas] WebSocket initialization placeholder');
+    console.log('[YC Hedge Fund] WebSocket initialization placeholder');
     // TODO: Connect to Railway relay for AIS + OpenSky streams
 }
 /**
  * Main application initialization
  */
 function init() {
-    console.log('[Atlas] Initializing Global Intelligence Platform...');
-    console.log('[Atlas] Environment:', import.meta.env.MODE);
+    console.log('[YC Hedge Fund] Initializing Global Intelligence Platform...');
+    console.log('[YC Hedge Fund] Environment:', import.meta.env.MODE);
     // Initialize core components
     initGlobe();
     initPanels();
     // WebSocket connections (deferred to avoid blocking)
     setTimeout(initWebSockets, 1000);
-    console.log('[Atlas] Initialization complete');
+    console.log('[YC Hedge Fund] Initialization complete');
 }
 // Wait for DOM to be ready
 if (document.readyState === 'loading') {

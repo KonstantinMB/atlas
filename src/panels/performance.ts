@@ -251,7 +251,7 @@ function rebuildChart(): void {
   const atlasVals  = atlas.map(p => p.totalValue);
   const spyVals    = spy.slice(-atlas.length);
 
-  // Normalise SPY to same starting value as Atlas for visual comparison
+  // Normalise SPY to same starting value as YC Hedge Fund for visual comparison
   const atlasStart = atlasVals[0]!;
   const spyStart   = spyVals[0] ?? atlasStart;
   const spyNorm    = spyVals.map(v => (v / spyStart) * atlasStart);
@@ -286,7 +286,7 @@ function rebuildChart(): void {
           x2="${(VB.w - MARGIN.right).toFixed(0)}" y2="${baseline.toFixed(0)}"
           class="perf-axis-line"/>
 
-    <!-- Atlas gradient fill -->
+    <!-- YC Hedge Fund gradient fill -->
     <path d="${svgArea(atlasPts, baseline)}"
           fill="url(#${gradId})" class="perf-area-atlas"/>
 
@@ -294,7 +294,7 @@ function rebuildChart(): void {
     <path d="${svgLine(spyPts)}"
           class="perf-line-spy" fill="none"/>
 
-    <!-- Atlas line -->
+    <!-- YC Hedge Fund line -->
     <path d="${svgLine(atlasPts)}"
           class="perf-line-atlas" fill="none"/>
 
@@ -311,7 +311,7 @@ function rebuildChart(): void {
     <!-- Legend -->
     <g transform="translate(${MARGIN.left + 4},${MARGIN.top + 4})">
       <line x1="0" y1="5" x2="18" y2="5" stroke="#4ade80" stroke-width="1.5"/>
-      <text x="22" y="8.5" class="perf-legend-label">Atlas</text>
+      <text x="22" y="8.5" class="perf-legend-label">YC Hedge Fund</text>
       <line x1="60" y1="5" x2="78" y2="5" stroke="#94a3b8" stroke-width="1"
             stroke-dasharray="3,2"/>
       <text x="82" y="8.5" class="perf-legend-label spy">SPY</text>
@@ -405,7 +405,7 @@ function attachTooltip(container: HTMLElement): void {
 
     tooltipEl.innerHTML = `
       <div class="perf-tt-date">${dateStr}</div>
-      <div class="perf-tt-row"><span>Atlas NAV</span><strong>${navFmt(pt.v)}</strong></div>
+      <div class="perf-tt-row"><span>YC Hedge Fund NAV</span><strong>${navFmt(pt.v)}</strong></div>
       <div class="perf-tt-row"><span>P&L</span><strong class="${pnl >= 0 ? 'profit' : 'loss'}">${pnl >= 0 ? '+' : ''}${navFmt(pnl)}</strong></div>
       ${spyVal > 0 ? `<div class="perf-tt-row"><span>SPY (norm)</span><strong>${navFmt(spyVal)}</strong></div>` : ''}
     `;
@@ -690,7 +690,7 @@ function appendStratRow(s: StrategyStats): void {
 function exportCsv(): void {
   const { atlas, spy } = slicePeriod(currentAtlas, currentSpy, activePeriod);
   const lines: string[] = [
-    'Date,Atlas NAV,Atlas Return %,SPY (normalised),SPY Return %,Drawdown %',
+    'Date,YC Hedge Fund NAV,YC Hedge Fund Return %,SPY (normalised),SPY Return %,Drawdown %',
   ];
 
   const atlasStart = atlas[0]?.totalValue ?? 1_000_000;
@@ -727,7 +727,7 @@ function exportCsv(): void {
   const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
   const a    = document.createElement('a');
   a.href     = URL.createObjectURL(blob);
-  a.download = `atlas-performance-${activePeriod}-${new Date().toISOString().split('T')[0]}.csv`;
+  a.download = `yc-hedge-fund-performance-${activePeriod}-${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 }

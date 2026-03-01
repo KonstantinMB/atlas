@@ -473,7 +473,7 @@ export function downloadAuditLog(): void {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
 
-  const filename = `atlas-audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
+  const filename = `yc-hedge-fund-audit-log-${new Date().toISOString().slice(0, 10)}.csv`;
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
@@ -500,7 +500,7 @@ export function downloadAuditLogJSON(): void {
   const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
 
-  const filename = `atlas-audit-log-${new Date().toISOString().slice(0, 10)}.json`;
+  const filename = `yc-hedge-fund-audit-log-${new Date().toISOString().slice(0, 10)}.json`;
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;

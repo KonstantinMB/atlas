@@ -74,7 +74,7 @@ const PARAMS = 'mode=artlist&maxrecords=25&format=json&timespan=360'; // last 6 
 async function fetchGdeltQuery(query: string): Promise<GdeltEvent[]> {
   const url = `${BASE}?query=${query}&${PARAMS}`;
   const res = await fetch(url, {
-    headers: { Accept: 'application/json', 'User-Agent': 'Atlas/1.0' },
+    headers: { Accept: 'application/json', 'User-Agent': 'YC-Hedge-Fund/1.0' },
     signal: AbortSignal.timeout(8_000),
   });
   if (res.status === 429) return [];

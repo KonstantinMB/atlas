@@ -8,4 +8,4 @@ restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 10
 
 [[services]]
-name = "atlas-relay"
+name = "yc-hedge-fund-relay"

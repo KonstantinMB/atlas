@@ -1,8 +1,8 @@
-# Atlas Theme System
+# YC Hedge Fund Theme System
 
 ## Overview
 
-Project Atlas includes a complete dark/light theme system built with CSS custom properties (CSS variables) and vanilla TypeScript. The system supports smooth transitions, localStorage persistence, system preference detection, and keyboard shortcuts.
+YC Hedge Fund includes a complete dark/light theme system built with CSS custom properties (CSS variables) and vanilla TypeScript. The system supports smooth transitions, localStorage persistence, system preference detection, and keyboard shortcuts.
 
 ## Features
 

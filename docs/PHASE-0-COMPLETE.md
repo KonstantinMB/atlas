@@ -2,7 +2,7 @@
 
 ## Delivery Summary
 
-Project Atlas Phase 0 is complete. The edge function base architecture is fully implemented and tested.
+YC Hedge Fund Phase 0 is complete. The edge function base architecture is fully implemented and tested.
 
 ## What Was Built
 

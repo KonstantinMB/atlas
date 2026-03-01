@@ -1,5 +1,5 @@
 {
-  "name": "atlas-relay",
+  "name": "yc-hedge-fund-relay",
   "version": "1.0.0",
   "description": "Railway WebSocket relay: AIS vessel tracking + OpenSky aircraft streams",
   "type": "module",

@@ -1,4 +1,4 @@
-# Project Atlas - Phase 1 Globe Complete
+# YC Hedge Fund - Phase 1 Globe Complete
 
 ## What Was Built
 
