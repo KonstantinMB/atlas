@@ -734,7 +734,6 @@ pre {
 }
 
 /* Allow SVG gauges (strategic risk) to render without clipping */
-.panel-body > .risk-gauge-container,
 .panel-body > .risk-gauge-svg-wrap {
   overflow: visible;
 }
@@ -1703,49 +1702,46 @@ pre {
 .instability-trend.trend-neutral { color: var(--text-muted); }
 
 /* ── Strategic Risk Panel ──────────────────── */
-.risk-gauge-container {
-  padding: 1rem 1rem 0.75rem;
-  text-align: center;
-  overflow: visible;
+.risk-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem 0;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .risk-gauge-svg-wrap {
   display: flex;
   justify-content: center;
-  align-items: center;
-  margin-bottom: 0.25rem;
+  padding: 0.25rem 0.5rem 0;
   overflow: visible;
-  padding: 0 0.5rem;
+  transition: opacity 0.3s;
 }
 
-.risk-level-display {
-  font-size: 1.4rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  font-family: var(--font-mono);
-  margin-bottom: 0.2rem;
+/* Pulse animation when score updates */
+@keyframes risk-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.025); }
+  100% { transform: scale(1); }
 }
+.risk-gauge-pulse { animation: risk-pulse 0.5s ease-out; }
 
-.risk-subtitle {
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  margin-bottom: 0.75rem;
+.risk-updated-label {
+  text-align: center;
+  font-size: 0.58rem;
+  color: var(--text-tertiary);
+  padding: 0.15rem 0 0.5rem;
+  transition: color 0.3s;
 }
+.risk-updated-label.flash { color: var(--accent-primary); }
 
-.risk-bar {
-  height: 5px;
-  border-radius: 3px;
-  background: var(--bg-input);
-  margin: 0 0 0.75rem;
-  overflow: hidden;
-}
-
-.risk-bar-fill {
-  height: 100%;
-  border-radius: 3px;
-  transition: width 1s ease;
+.risk-divider {
+  height: 1px;
+  background: var(--border-secondary);
+  margin: 0 1rem 0.6rem;
 }
 
 .risk-factors-label {
@@ -1754,37 +1750,60 @@ pre {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-muted);
-  text-align: left;
-  margin-bottom: 0.35rem;
+  padding: 0 1rem;
+  margin-bottom: 0.4rem;
 }
 
-.risk-factors { text-align: left; }
+.risk-factors-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0 1rem 0.75rem;
+}
 
-.risk-factor {
+.risk-factor-row {}
+
+.risk-factor-top {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.2rem 0;
-  font-size: 0.7rem;
-  color: var(--text-secondary);
+  gap: 0.45rem;
+  margin-bottom: 0.2rem;
 }
 
 .risk-factor-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.risk-info-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.5rem 1rem 0;
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+.risk-factor-label {
+  flex: 1;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.risk-factor-val {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.risk-factor-bar-outer {
+  height: 3px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-left: 1.1rem;
+}
+
+.risk-factor-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.8s ease;
+  opacity: 0.7;
 }
 
 .risk-info-tooltip-trigger {

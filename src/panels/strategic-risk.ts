@@ -1,29 +1,47 @@
 /**
  * Strategic Risk Panel
- * Displays a composite global risk gauge (0–100) with contributing factors.
- * Shows mock score initially; updates with live USGS + GDACS data when available.
+ *
+ * Displays a composite Global Strategic Risk Index (GSRI) 0–100 gauge.
+ * Updates dynamically from 4 live sources:
+ *   - USGS earthquakes (M4.5+)
+ *   - GDACS disaster alerts
+ *   - Fear & Greed index (market stress)
+ *   - GDELT news event tone
+ *
+ * Gauge redesigned: thick arc, glow, tick marks, big number, pulsed on update.
  */
 
 import { registerPanel } from './panel-manager';
 import { dataService } from '../lib/data-service';
-import type { EarthquakeEvent, DisasterAlert, UsgsDetail, GdacsDetail } from '../lib/data-service';
+import type {
+  EarthquakeEvent,
+  DisasterAlert,
+  UsgsDetail,
+  GdacsDetail,
+  FearGreedData,
+  GdeltDetail,
+} from '../lib/data-service';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type RiskLevel = 'LOW' | 'ELEVATED' | 'HIGH' | 'CRITICAL';
 
 interface RiskFactor {
   label: string;
+  value: string;
   color: string;
+  pct: number;      // 0–100, bar fill
 }
 
-const INITIAL_SCORE = 62;
+interface RiskState {
+  earthquakes:  EarthquakeEvent[];
+  alerts:       DisasterAlert[];
+  fearGreed:    number | null;   // 0-100, lower = more fear
+  gdeltTone:    number | null;   // negative = bad news
+  lastUpdated:  number;
+}
 
-const INITIAL_FACTORS: RiskFactor[] = [
-  { label: '3 active conflict zones', color: 'var(--status-critical)' },
-  { label: 'Market volatility elevated', color: 'var(--status-medium)' },
-  { label: '2 military exercises active', color: 'var(--status-high)' },
-];
-
-// ── Risk helpers ───────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getRiskLevel(score: number): RiskLevel {
   if (score >= 76) return 'CRITICAL';
@@ -34,201 +52,372 @@ function getRiskLevel(score: number): RiskLevel {
 
 function getRiskColor(level: RiskLevel): string {
   switch (level) {
-    case 'CRITICAL': return 'var(--status-critical)';
-    case 'HIGH':     return 'var(--status-high)';
-    case 'ELEVATED': return 'var(--status-medium)';
-    case 'LOW':      return 'var(--status-low)';
+    case 'CRITICAL': return '#ef4444';
+    case 'HIGH':     return '#f97316';
+    case 'ELEVATED': return '#eab308';
+    case 'LOW':      return '#4ade80';
   }
 }
 
-function computeRiskScore(
-  earthquakes: EarthquakeEvent[],
-  alerts: DisasterAlert[]
-): { score: number; factors: RiskFactor[] } {
-  let score = 50; // base
+function computeRisk(state: RiskState): { score: number; factors: RiskFactor[] } {
+  let score = 40; // geopolitical baseline
   const factors: RiskFactor[] = [];
 
-  // Earthquake contribution
-  if (earthquakes.length >= 5) {
-    score += 10;
+  // ── Earthquake contribution (max +25) ──────────────────────────────────────
+  const sig = state.earthquakes.filter(e => e.magnitude >= 4.5);
+  const maxMag = sig.reduce((m, e) => Math.max(m, e.magnitude), 0);
+  const quakeContrib = Math.min(sig.length * 2 + (maxMag > 6 ? (maxMag - 6) * 10 : 0), 25);
+  if (quakeContrib > 0) {
+    score += quakeContrib;
     factors.push({
-      label: `${earthquakes.length} active earthquakes (M4.5+)`,
-      color: 'var(--status-high)',
+      label: maxMag > 6
+        ? `Major earthquake M${maxMag.toFixed(1)} detected`
+        : `${sig.length} earthquakes M4.5+`,
+      value: `+${quakeContrib}`,
+      color: maxMag > 7 ? '#ef4444' : '#f97316',
+      pct: (quakeContrib / 25) * 100,
     });
   }
 
-  const maxMag = earthquakes.reduce((m, e) => Math.max(m, e.magnitude), 0);
-  if (maxMag > 7) {
-    score += 15;
-    factors.push({
-      label: `Major earthquake M${maxMag.toFixed(1)} detected`,
-      color: 'var(--status-critical)',
-    });
-  } else if (maxMag > 6) {
-    score += 8;
-    factors.push({
-      label: `Strong earthquake M${maxMag.toFixed(1)} detected`,
-      color: 'var(--status-high)',
-    });
-  }
-
-  // Disaster alerts contribution (capped at +20)
-  const alertContrib = Math.min(alerts.length * 5, 20);
-  if (alerts.length > 0) {
+  // ── Disaster alerts contribution (max +20) ────────────────────────────────
+  if (state.alerts.length > 0) {
+    const redAlerts = state.alerts.filter(a => a.severity === 'red').length;
+    const alertContrib = Math.min(state.alerts.length * 4 + redAlerts * 3, 20);
     score += alertContrib;
-    const redAlerts = alerts.filter((a) => a.severity === 'red').length;
     factors.push({
-      label: `${alerts.length} active disaster alerts${redAlerts > 0 ? ` (${redAlerts} critical)` : ''}`,
-      color: redAlerts > 0 ? 'var(--status-critical)' : 'var(--status-medium)',
+      label: `${state.alerts.length} active disaster alerts${redAlerts ? ` (${redAlerts} critical)` : ''}`,
+      value: `+${alertContrib}`,
+      color: redAlerts > 0 ? '#ef4444' : '#eab308',
+      pct: (alertContrib / 20) * 100,
     });
   }
 
-  // Add standing factors that always apply
-  factors.push({ label: 'Geopolitical baseline risk', color: 'var(--status-medium)' });
+  // ── Market Fear & Greed contribution (max +15) ────────────────────────────
+  if (state.fearGreed !== null) {
+    const fear = 100 - state.fearGreed; // invert: fear = risk
+    const mktContrib = Math.round((fear / 100) * 15);
+    score += mktContrib;
+    const label = state.fearGreed <= 25 ? 'Extreme Fear'
+      : state.fearGreed <= 40 ? 'Fear'
+      : state.fearGreed >= 75 ? 'Greed (low risk)'
+      : 'Neutral';
+    factors.push({
+      label: `Market sentiment: ${label}`,
+      value: `+${mktContrib}`,
+      color: state.fearGreed <= 30 ? '#ef4444' : state.fearGreed <= 50 ? '#eab308' : '#4ade80',
+      pct: (mktContrib / 15) * 100,
+    });
+  }
 
-  score = Math.min(100, Math.max(0, score));
+  // ── GDELT news tone contribution (max +10) ────────────────────────────────
+  if (state.gdeltTone !== null) {
+    // Tone is negative-biased; clamp to -10..0 range → 0..10 contrib
+    const toneScore = Math.max(0, Math.min(10, (-state.gdeltTone) * 0.8));
+    score += Math.round(toneScore);
+    if (toneScore > 0) {
+      factors.push({
+        label: `Global news tone: ${state.gdeltTone.toFixed(1)} (negative)`,
+        value: `+${Math.round(toneScore)}`,
+        color: toneScore > 6 ? '#ef4444' : '#eab308',
+        pct: (toneScore / 10) * 100,
+      });
+    }
+  }
+
+  // ── Geopolitical standing baseline ────────────────────────────────────────
+  factors.push({
+    label: 'Geopolitical baseline risk',
+    value: '+40',
+    color: '#94a3b8',
+    pct: 40,
+  });
+
+  score = Math.min(100, Math.max(0, Math.round(score)));
   return { score, factors };
 }
 
-// ── SVG gauge ─────────────────────────────────────────────────────────────────
+// ── SVG Gauge ─────────────────────────────────────────────────────────────────
 
-function buildGaugeSVG(score: number, color: string): SVGElement {
+function buildGaugeSVG(score: number, color: string): SVGSVGElement {
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg') as SVGSVGElement;
 
-  // viewBox has 8px padding on all sides to fully contain the stroke (stroke-width 10, half = 5)
-  // Arc center: (100, 90), radius: 80, arc from (20,90) to (180,90)
-  // With padding: viewBox = "12 0 176 100"
-  svg.setAttribute('viewBox', '12 2 176 98');
-  svg.setAttribute('xmlns', ns);
-  svg.style.width = '100%';
-  svg.style.maxWidth = '220px';
-  svg.style.display = 'block';
+  // Dimensions — wide semicircle with room for score text
+  const W = 240, H = 148;
+  const cx = 120, cy = 118, r = 90;
+  const SW = 18;   // stroke width
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('style', 'max-width:260px;display:block;overflow:visible');
 
-  const cx = 100, cy = 90, r = 80;
-  const startX = cx - r; // 20
-  const endX   = cx + r; // 180
+  // ── Defs: glow filter ────────────────────────────────────────────────────
+  const defs = document.createElementNS(ns, 'defs');
 
-  // Background arc (grey track)
+  const filter = document.createElementNS(ns, 'filter');
+  filter.setAttribute('id', 'gauge-glow');
+  filter.setAttribute('x', '-40%'); filter.setAttribute('y', '-40%');
+  filter.setAttribute('width', '180%'); filter.setAttribute('height', '180%');
+  const blur = document.createElementNS(ns, 'feGaussianBlur');
+  blur.setAttribute('stdDeviation', '4');
+  blur.setAttribute('result', 'coloredBlur');
+  const merge = document.createElementNS(ns, 'feMerge');
+  const mn1 = document.createElementNS(ns, 'feMergeNode');
+  mn1.setAttribute('in', 'coloredBlur');
+  const mn2 = document.createElementNS(ns, 'feMergeNode');
+  mn2.setAttribute('in', 'SourceGraphic');
+  merge.appendChild(mn1); merge.appendChild(mn2);
+  filter.appendChild(blur); filter.appendChild(merge);
+  defs.appendChild(filter);
+  svg.appendChild(defs);
+
+  // ── Track (full grey semicircle) ─────────────────────────────────────────
   const track = document.createElementNS(ns, 'path');
-  track.setAttribute('d', `M ${startX} ${cy} A ${r} ${r} 0 0 1 ${endX} ${cy}`);
+  track.setAttribute('d', `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`);
   track.setAttribute('fill', 'none');
-  track.setAttribute('stroke', 'rgba(255,255,255,0.08)');
-  track.setAttribute('stroke-width', '10');
+  track.setAttribute('stroke', 'rgba(255,255,255,0.07)');
+  track.setAttribute('stroke-width', String(SW));
   track.setAttribute('stroke-linecap', 'round');
   svg.appendChild(track);
 
-  // Filled arc proportional to score (0–100 maps to 0–π)
-  const angle = (score / 100) * Math.PI;
-  const x = cx + r * Math.cos(Math.PI - angle);
-  const y = cy - r * Math.sin(Math.PI - angle);
-  const largeArc = angle > Math.PI / 2 ? 1 : 0;
+  // ── Tick marks at 25, 50, 75 (small dots on the track) ───────────────────
+  const TICK_R_IN  = r - SW / 2 - 4;
+  const TICK_R_OUT = r + SW / 2 + 4;
+  for (const pct of [25, 50, 75]) {
+    const a = (pct / 100) * Math.PI;
+    const tx = cx + r * Math.cos(Math.PI - a);
+    const ty = cy - r * Math.sin(Math.PI - a);
+    const tick = document.createElementNS(ns, 'circle');
+    tick.setAttribute('cx', tx.toFixed(2));
+    tick.setAttribute('cy', ty.toFixed(2));
+    tick.setAttribute('r', '3');
+    tick.setAttribute('fill', 'rgba(255,255,255,0.18)');
+    svg.appendChild(tick);
 
-  const fill = document.createElementNS(ns, 'path');
-  fill.setAttribute('d', `M ${startX} ${cy} A ${r} ${r} 0 ${largeArc} 1 ${x.toFixed(2)} ${y.toFixed(2)}`);
-  fill.setAttribute('fill', 'none');
-  fill.setAttribute('stroke', color);
-  fill.setAttribute('stroke-width', '10');
-  fill.setAttribute('stroke-linecap', 'round');
-  svg.appendChild(fill);
+    // Tiny label below ticks (25, 50, 75)
+    const lx_inner = cx + (TICK_R_OUT + 5) * Math.cos(Math.PI - a);
+    const ly_inner = cy - (TICK_R_OUT + 5) * Math.sin(Math.PI - a);
+    const lbl = document.createElementNS(ns, 'text');
+    lbl.setAttribute('x', lx_inner.toFixed(1));
+    lbl.setAttribute('y', ly_inner.toFixed(1));
+    lbl.setAttribute('text-anchor', 'middle');
+    lbl.setAttribute('dominant-baseline', 'middle');
+    lbl.setAttribute('font-size', '8');
+    lbl.setAttribute('fill', 'rgba(255,255,255,0.2)');
+    lbl.textContent = String(pct);
+    svg.appendChild(lbl);
+  }
 
-  // Score label (centered in the arc)
+  // ── Filled arc ───────────────────────────────────────────────────────────
+  if (score > 0) {
+    const angle = (score / 100) * Math.PI;
+    const ex = cx + r * Math.cos(Math.PI - angle);
+    const ey = cy - r * Math.sin(Math.PI - angle);
+    const largeArc = angle > Math.PI / 2 ? 1 : 0;
+
+    // Subtle shadow arc (slightly thicker, lower opacity)
+    const shadow = document.createElementNS(ns, 'path');
+    shadow.setAttribute('d', `M ${cx - r} ${cy} A ${r} ${r} 0 ${largeArc} 1 ${ex.toFixed(2)} ${ey.toFixed(2)}`);
+    shadow.setAttribute('fill', 'none');
+    shadow.setAttribute('stroke', color);
+    shadow.setAttribute('stroke-width', String(SW + 8));
+    shadow.setAttribute('stroke-linecap', 'round');
+    shadow.setAttribute('opacity', '0.12');
+    svg.appendChild(shadow);
+
+    // Main arc
+    const fill = document.createElementNS(ns, 'path');
+    fill.setAttribute('d', `M ${cx - r} ${cy} A ${r} ${r} 0 ${largeArc} 1 ${ex.toFixed(2)} ${ey.toFixed(2)}`);
+    fill.setAttribute('fill', 'none');
+    fill.setAttribute('stroke', color);
+    fill.setAttribute('stroke-width', String(SW));
+    fill.setAttribute('stroke-linecap', 'round');
+    fill.setAttribute('filter', 'url(#gauge-glow)');
+    svg.appendChild(fill);
+
+    // Bright dot at the arc tip
+    const dot = document.createElementNS(ns, 'circle');
+    dot.setAttribute('cx', ex.toFixed(2));
+    dot.setAttribute('cy', ey.toFixed(2));
+    dot.setAttribute('r', String(SW / 2 + 2));
+    dot.setAttribute('fill', color);
+    dot.setAttribute('filter', 'url(#gauge-glow)');
+    svg.appendChild(dot);
+
+    // White inner dot
+    const dotInner = document.createElementNS(ns, 'circle');
+    dotInner.setAttribute('cx', ex.toFixed(2));
+    dotInner.setAttribute('cy', ey.toFixed(2));
+    dotInner.setAttribute('r', '3');
+    dotInner.setAttribute('fill', '#ffffff');
+    dotInner.setAttribute('opacity', '0.85');
+    svg.appendChild(dotInner);
+  }
+
+  // ── Score number ─────────────────────────────────────────────────────────
   const scoreText = document.createElementNS(ns, 'text');
   scoreText.setAttribute('x', String(cx));
-  scoreText.setAttribute('y', String(cy - 10));
+  scoreText.setAttribute('y', String(cy - 32));
   scoreText.setAttribute('text-anchor', 'middle');
-  scoreText.setAttribute('font-size', '26');
-  scoreText.setAttribute('font-weight', '700');
+  scoreText.setAttribute('font-size', '52');
+  scoreText.setAttribute('font-weight', '800');
   scoreText.setAttribute('fill', color);
-  scoreText.setAttribute('font-family', 'SF Mono, Monaco, monospace');
+  scoreText.setAttribute('font-family', 'SF Mono, Consolas, Monaco, monospace');
+  scoreText.setAttribute('filter', 'url(#gauge-glow)');
   scoreText.textContent = String(score);
   svg.appendChild(scoreText);
 
-  // Min label
-  const minLabel = document.createElementNS(ns, 'text');
-  minLabel.setAttribute('x', String(startX));
-  minLabel.setAttribute('y', String(cy + 14));
-  minLabel.setAttribute('text-anchor', 'middle');
-  minLabel.setAttribute('font-size', '10');
-  minLabel.setAttribute('fill', 'rgba(255,255,255,0.3)');
-  minLabel.textContent = '0';
-  svg.appendChild(minLabel);
+  // "/100" label
+  const subText = document.createElementNS(ns, 'text');
+  subText.setAttribute('x', String(cx));
+  subText.setAttribute('y', String(cy - 10));
+  subText.setAttribute('text-anchor', 'middle');
+  subText.setAttribute('font-size', '11');
+  subText.setAttribute('fill', 'rgba(255,255,255,0.35)');
+  subText.setAttribute('font-family', 'SF Mono, Consolas, Monaco, monospace');
+  subText.textContent = '/ 100';
+  svg.appendChild(subText);
 
-  // Max label
-  const maxLabel = document.createElementNS(ns, 'text');
-  maxLabel.setAttribute('x', String(endX));
-  maxLabel.setAttribute('y', String(cy + 14));
-  maxLabel.setAttribute('text-anchor', 'middle');
-  maxLabel.setAttribute('font-size', '10');
-  maxLabel.setAttribute('fill', 'rgba(255,255,255,0.3)');
-  maxLabel.textContent = '100';
-  svg.appendChild(maxLabel);
+  // Risk level badge inside arc
+  const level = getRiskLevel(score);
+  const lvlText = document.createElementNS(ns, 'text');
+  lvlText.setAttribute('x', String(cx));
+  lvlText.setAttribute('y', String(cy + 16));
+  lvlText.setAttribute('text-anchor', 'middle');
+  lvlText.setAttribute('font-size', '10');
+  lvlText.setAttribute('font-weight', '700');
+  lvlText.setAttribute('letter-spacing', '2');
+  lvlText.setAttribute('fill', color);
+  lvlText.setAttribute('font-family', 'system-ui, -apple-system, sans-serif');
+  lvlText.textContent = level;
+  svg.appendChild(lvlText);
 
-  return svg as unknown as SVGElement;
+  // 0 and 100 end labels
+  const startLbl = document.createElementNS(ns, 'text');
+  startLbl.setAttribute('x', String(cx - r - 4));
+  startLbl.setAttribute('y', String(cy + 18));
+  startLbl.setAttribute('text-anchor', 'end');
+  startLbl.setAttribute('font-size', '9');
+  startLbl.setAttribute('fill', 'rgba(255,255,255,0.22)');
+  startLbl.textContent = '0';
+  svg.appendChild(startLbl);
+
+  const endLbl = document.createElementNS(ns, 'text');
+  endLbl.setAttribute('x', String(cx + r + 4));
+  endLbl.setAttribute('y', String(cy + 18));
+  endLbl.setAttribute('text-anchor', 'start');
+  endLbl.setAttribute('font-size', '9');
+  endLbl.setAttribute('fill', 'rgba(255,255,255,0.22)');
+  endLbl.textContent = '100';
+  svg.appendChild(endLbl);
+
+  return svg;
 }
 
-// ── Module-level references for live updates ──────────────────────────────────
+// ── Module-level refs ─────────────────────────────────────────────────────────
 
 let gaugeWrapEl: HTMLElement | null = null;
-let levelDisplayEl: HTMLElement | null = null;
-let barFillEl: HTMLElement | null = null;
-let factorsListEl: HTMLElement | null = null;
+let factorsBodyEl: HTMLElement | null = null;
+let updatedLabelEl: HTMLElement | null = null;
+let lastScore = -1;
 
-function updateRiskDisplay(score: number, factors: RiskFactor[]): void {
+function updateDisplay(score: number, factors: RiskFactor[]): void {
   const level = getRiskLevel(score);
   const color = getRiskColor(level);
 
+  // Rebuild the gauge SVG
   if (gaugeWrapEl) {
     gaugeWrapEl.innerHTML = '';
     gaugeWrapEl.appendChild(buildGaugeSVG(score, color));
+
+    // Pulse animation on change
+    if (lastScore !== score) {
+      gaugeWrapEl.classList.remove('risk-gauge-pulse');
+      void gaugeWrapEl.offsetWidth; // reflow to restart animation
+      gaugeWrapEl.classList.add('risk-gauge-pulse');
+      lastScore = score;
+    }
   }
 
-  if (levelDisplayEl) {
-    levelDisplayEl.textContent = level;
-    levelDisplayEl.style.color = color;
+  // Updated label
+  if (updatedLabelEl) {
+    updatedLabelEl.textContent = 'Updated just now';
+    updatedLabelEl.classList.add('flash');
+    setTimeout(() => updatedLabelEl?.classList.remove('flash'), 1500);
   }
 
-  if (barFillEl) {
-    barFillEl.style.width = `${score}%`;
-    barFillEl.style.background = color;
-  }
+  // Factors list
+  if (!factorsBodyEl) return;
+  factorsBodyEl.innerHTML = '';
 
-  if (factorsListEl) {
-    factorsListEl.innerHTML = '';
-    factors.forEach(({ label, color: dotColor }) => {
-      const row = document.createElement('div');
-      row.className = 'risk-factor';
+  for (const f of factors) {
+    const row = document.createElement('div');
+    row.className = 'risk-factor-row';
 
-      const dot = document.createElement('span');
-      dot.className = 'risk-factor-dot';
-      dot.style.background = dotColor;
+    const top = document.createElement('div');
+    top.className = 'risk-factor-top';
 
-      const text = document.createElement('span');
-      text.textContent = label;
+    const dot = document.createElement('span');
+    dot.className = 'risk-factor-dot';
+    dot.style.background = f.color;
+    dot.style.boxShadow  = `0 0 6px ${f.color}`;
 
-      row.appendChild(dot);
-      row.appendChild(text);
-      factorsListEl!.appendChild(row);
-    });
+    const label = document.createElement('span');
+    label.className = 'risk-factor-label';
+    label.textContent = f.label;
+
+    const val = document.createElement('span');
+    val.className = 'risk-factor-val';
+    val.textContent = f.value;
+    val.style.color = f.color;
+
+    top.appendChild(dot);
+    top.appendChild(label);
+    top.appendChild(val);
+
+    const bar = document.createElement('div');
+    bar.className = 'risk-factor-bar-outer';
+    const fill = document.createElement('div');
+    fill.className = 'risk-factor-bar-fill';
+    fill.style.width  = `${Math.min(f.pct, 100)}%`;
+    fill.style.background = f.color;
+    bar.appendChild(fill);
+
+    row.appendChild(top);
+    row.appendChild(bar);
+    factorsBodyEl.appendChild(row);
   }
 }
 
-// Accumulate data from both sources before recomputing
-let latestEarthquakes: EarthquakeEvent[] = [];
-let latestAlerts: DisasterAlert[] = [];
+// ── Live state ────────────────────────────────────────────────────────────────
 
-function recomputeAndUpdate(): void {
-  const { score, factors } = computeRiskScore(latestEarthquakes, latestAlerts);
-  updateRiskDisplay(score, factors);
+const state: RiskState = {
+  earthquakes: [],
+  alerts:      [],
+  fearGreed:   null,
+  gdeltTone:   null,
+  lastUpdated: 0,
+};
+
+function refresh(): void {
+  state.lastUpdated = Date.now();
+  const { score, factors } = computeRisk(state);
+  updateDisplay(score, factors);
+  if (updatedLabelEl) {
+    setInterval(() => {
+      const ago = Math.floor((Date.now() - state.lastUpdated) / 60_000);
+      if (updatedLabelEl) {
+        updatedLabelEl.textContent = ago < 1
+          ? 'Updated just now'
+          : `Updated ${ago}m ago`;
+      }
+    }, 60_000);
+  }
 }
 
-// ── Panel body ─────────────────────────────────────────────────────────────────
+// ── Panel body ────────────────────────────────────────────────────────────────
 
 function buildRiskBody(container: HTMLElement): void {
-  const level = getRiskLevel(INITIAL_SCORE);
-  const color = getRiskColor(level);
-
-  // Info bar with tooltip explaining the index
+  // Info bar
   const infoBar = document.createElement('div');
   infoBar.className = 'risk-info-bar';
 
@@ -236,130 +425,125 @@ function buildRiskBody(container: HTMLElement): void {
   infoLabel.className = 'risk-info-label';
   infoLabel.textContent = 'Global Strategic Risk Index';
 
-  const tooltipTrigger = document.createElement('span');
-  tooltipTrigger.className = 'risk-info-tooltip-trigger';
-  tooltipTrigger.textContent = 'ⓘ';
-  tooltipTrigger.setAttribute(
+  const tip = document.createElement('span');
+  tip.className = 'risk-info-tooltip-trigger';
+  tip.textContent = 'ⓘ';
+  tip.setAttribute(
     'data-tooltip',
-    'The Global Strategic Risk Index (GSRI) is a composite 0-100 score computed from:\n• Active USGS earthquakes (M4.5+)\n• GDACS disaster alerts\n• Active conflict zones in intelligence feed\n• Market volatility indicators\n\nUpdated every 5 minutes from live data feeds.'
+    'GSRI (0–100) is computed from:\n• USGS earthquakes (M4.5+)\n• GDACS disaster alerts\n• Market Fear & Greed index\n• GDELT global news tone\n• Geopolitical baseline\n\nUpdates every 5 minutes.'
   );
-
   infoBar.appendChild(infoLabel);
-  infoBar.appendChild(tooltipTrigger);
+  infoBar.appendChild(tip);
   container.appendChild(infoBar);
 
-  const wrapper = document.createElement('div');
-  wrapper.className = 'risk-gauge-container';
-
-  // SVG gauge
+  // Gauge wrap
   const gaugeWrap = document.createElement('div');
   gaugeWrap.className = 'risk-gauge-svg-wrap';
-  gaugeWrap.appendChild(buildGaugeSVG(INITIAL_SCORE, color));
   gaugeWrapEl = gaugeWrap;
-  wrapper.appendChild(gaugeWrap);
+  container.appendChild(gaugeWrap);
 
-  // Risk level label
-  const levelDisplay = document.createElement('div');
-  levelDisplay.className = 'risk-level-display';
-  levelDisplay.textContent = level;
-  levelDisplay.style.color = color;
-  levelDisplayEl = levelDisplay;
-  wrapper.appendChild(levelDisplay);
+  // Updated timestamp
+  const updatedLabel = document.createElement('div');
+  updatedLabel.className = 'risk-updated-label';
+  updatedLabel.textContent = 'Waiting for data…';
+  updatedLabelEl = updatedLabel;
+  container.appendChild(updatedLabel);
 
-  // Subtitle
-  const subtitle = document.createElement('div');
-  subtitle.className = 'risk-subtitle';
-  subtitle.textContent = 'Global Strategic Risk Index';
-  wrapper.appendChild(subtitle);
+  // Divider
+  const divider = document.createElement('div');
+  divider.className = 'risk-divider';
+  container.appendChild(divider);
 
-  // Horizontal bar
-  const bar = document.createElement('div');
-  bar.className = 'risk-bar';
+  // Factors section
+  const factorsHdr = document.createElement('div');
+  factorsHdr.className = 'risk-factors-label';
+  factorsHdr.textContent = 'Contributing Factors';
+  container.appendChild(factorsHdr);
 
-  const barFill = document.createElement('div');
-  barFill.className = 'risk-bar-fill';
-  barFill.style.width = `${INITIAL_SCORE}%`;
-  barFill.style.background = color;
-  bar.appendChild(barFill);
-  barFillEl = barFill;
-  wrapper.appendChild(bar);
+  const factorsBody = document.createElement('div');
+  factorsBody.className = 'risk-factors-body';
+  factorsBodyEl = factorsBody;
+  container.appendChild(factorsBody);
 
-  // Contributing factors
-  const factorsLabel = document.createElement('div');
-  factorsLabel.className = 'risk-factors-label';
-  factorsLabel.textContent = 'Contributing Factors';
-  wrapper.appendChild(factorsLabel);
-
-  const factors = document.createElement('div');
-  factors.className = 'risk-factors';
-  factorsListEl = factors;
-
-  INITIAL_FACTORS.forEach(({ label, color: dotColor }) => {
-    const row = document.createElement('div');
-    row.className = 'risk-factor';
-
-    const dot = document.createElement('span');
-    dot.className = 'risk-factor-dot';
-    dot.style.background = dotColor;
-
-    const text = document.createElement('span');
-    text.textContent = label;
-
-    row.appendChild(dot);
-    row.appendChild(text);
-    factors.appendChild(row);
-  });
-
-  wrapper.appendChild(factors);
-  container.appendChild(wrapper);
-
-  // Data sources badge row
+  // Data sources row
   const sourcesRow = document.createElement('div');
   sourcesRow.className = 'risk-data-sources';
 
-  const dataSources: Array<{ label: string; active: boolean }> = [
-    { label: 'USGS', active: true },
-    { label: 'GDACS', active: true },
-    { label: 'ACLED', active: false },
-    { label: 'MARKET', active: true },
+  const sources = [
+    { label: 'USGS', id: 'ds-usgs', active: false },
+    { label: 'GDACS', id: 'ds-gdacs', active: false },
+    { label: 'F&G', id: 'ds-fg', active: false },
+    { label: 'GDELT', id: 'ds-gdelt', active: false },
   ];
-
-  dataSources.forEach(({ label, active }) => {
+  for (const s of sources) {
     const badge = document.createElement('span');
-    badge.className = `risk-source-badge${active ? ' active' : ''}`;
-    badge.textContent = label;
+    badge.id = s.id;
+    badge.className = `risk-source-badge${s.active ? ' active' : ''}`;
+    badge.textContent = s.label;
     sourcesRow.appendChild(badge);
-  });
-
+  }
   container.appendChild(sourcesRow);
 
-  // ── Live data listeners ──────────────────────────────────────────────────────
+  function activateSource(id: string): void {
+    document.getElementById(id)?.classList.add('active');
+  }
 
+  // ── Bootstrap with initial render (shows baseline score immediately) ──────
+  const { score: initScore, factors: initFactors } = computeRisk(state);
+  updateDisplay(initScore, initFactors);
+
+  // ── Live data listeners ───────────────────────────────────────────────────
   dataService.addEventListener('usgs', (e: Event) => {
-    const { detail } = e as CustomEvent<UsgsDetail>;
-    latestEarthquakes = detail.events;
-    recomputeAndUpdate();
+    state.earthquakes = (e as CustomEvent<UsgsDetail>).detail.events;
+    activateSource('ds-usgs');
+    refresh();
   });
 
   dataService.addEventListener('gdacs', (e: Event) => {
-    const { detail } = e as CustomEvent<GdacsDetail>;
-    latestAlerts = detail.alerts;
-    recomputeAndUpdate();
+    state.alerts = (e as CustomEvent<GdacsDetail>).detail.alerts;
+    activateSource('ds-gdacs');
+    refresh();
   });
 
-  // Apply pre-loaded data if available
-  const existingUsgs = dataService.getUsgs();
-  if (existingUsgs) {
-    latestEarthquakes = existingUsgs.events;
-    recomputeAndUpdate();
+  dataService.addEventListener('fear-greed', (e: Event) => {
+    state.fearGreed = (e as CustomEvent<FearGreedData>).detail.value;
+    activateSource('ds-fg');
+    refresh();
+  });
+
+  dataService.addEventListener('gdelt', (e: Event) => {
+    const events = (e as CustomEvent<GdeltDetail>).detail.events;
+    if (events.length > 0) {
+      const tones = events.map(ev => ev.tone).filter((t): t is number => t !== null);
+      state.gdeltTone = tones.length > 0
+        ? tones.reduce((a, b) => a + b, 0) / tones.length
+        : null;
+      activateSource('ds-gdelt');
+      refresh();
+    }
+  });
+
+  // Apply already-loaded data
+  const usgs = dataService.getUsgs();
+  if (usgs) { state.earthquakes = usgs.events; activateSource('ds-usgs'); }
+
+  const gdacs = dataService.getGdacs();
+  if (gdacs) { state.alerts = gdacs.alerts; activateSource('ds-gdacs'); }
+
+  const fg = dataService.getFearGreed();
+  if (fg) { state.fearGreed = fg.value; activateSource('ds-fg'); }
+
+  const gdelt = dataService.getGdelt();
+  if (gdelt?.events.length) {
+    const tones = gdelt.events.map(ev => ev.tone).filter((t): t is number => t !== null);
+    state.gdeltTone = tones.length > 0 ? tones.reduce((a, b) => a + b, 0) / tones.length : null;
+    activateSource('ds-gdelt');
   }
 
-  const existingGdacs = dataService.getGdacs();
-  if (existingGdacs) {
-    latestAlerts = existingGdacs.alerts;
-    recomputeAndUpdate();
-  }
+  if (usgs || gdacs || fg || gdelt) refresh();
 }
+
+// ── Export ────────────────────────────────────────────────────────────────────
 
 export function initStrategicRiskPanel(): void {
   registerPanel({
