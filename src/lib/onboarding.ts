@@ -82,7 +82,10 @@ let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 function getTargetRect(selector: string): DOMRect | null {
   const el = document.querySelector(selector);
   if (!el) return null;
-  return el.getBoundingClientRect();
+  const rect = el.getBoundingClientRect();
+  // Treat hidden/zero-dimension elements as not found (use centered fallback)
+  if (rect.width <= 0 || rect.height <= 0) return null;
+  return rect;
 }
 
 function createSpotlight(rect: DOMRect): HTMLElement {
@@ -97,7 +100,7 @@ function createSpotlight(rect: DOMRect): HTMLElement {
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.82);
     border-radius: 6px;
     border: 2px solid var(--text-accent);
-    pointer-events: none;
+    pointer-events: auto;
     z-index: 10002;
     transition: all 0.25s ease;
   `;

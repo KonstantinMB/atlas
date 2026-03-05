@@ -125,11 +125,16 @@ function renderTable(data: LeaderboardResponse): void {
   if (!containerEl) return;
   lastResponse = data;
   const tableWrap = containerEl.querySelector('.leaderboard-table-wrap');
+  const subheaderText = containerEl.querySelector('.leaderboard-subheader-text');
   const subheader = containerEl.querySelector('.leaderboard-subheader');
   const rankCallout = containerEl.querySelector('.leaderboard-rank-callout');
-  if (!tableWrap || !subheader) return;
+  if (!tableWrap || !subheaderText) return;
 
-  subheader.textContent = `Ranked by portfolio return • You appear on all time periods when you trade • Last updated: ${formatTime(data.updatedAt)}`;
+  subheaderText.textContent = `Ranked by portfolio return • You appear on all time periods when you trade • Last updated: ${formatTime(data.updatedAt)}`;
+  const syncBtn = containerEl.querySelector('#leaderboard-sync-btn');
+  if (syncBtn) {
+    (syncBtn as HTMLElement).style.display = auth.isAuthenticated() ? '' : 'none';
+  }
 
   // Your rank callout: show when logged in and user not in top 10
   const userRank = data.currentUserRank ?? (data.currentUserEntry?.rank);
@@ -148,10 +153,20 @@ function renderTable(data: LeaderboardResponse): void {
     }
   }
 
-  if (data.entries.length === 0) {
+  // Show current user even when main entries empty (e.g. they're in set but not in top N, or set is sparse)
+  const entriesToShow = data.entries.length > 0
+    ? data.entries
+    : data.currentUserEntry
+      ? [data.currentUserEntry]
+      : [];
+
+  if (entriesToShow.length === 0) {
+    const msg = auth.isAuthenticated()
+      ? 'No traders yet. Trade to appear on all periods — your rank updates after each portfolio save.'
+      : 'No traders yet. Sign up and start paper trading to compete.';
     tableWrap.innerHTML = `
       <div class="leaderboard-empty">
-        <p>No traders yet. Sign up and start paper trading to compete.</p>
+        <p>${msg}</p>
       </div>
     `;
     return;
@@ -169,7 +184,7 @@ function renderTable(data: LeaderboardResponse): void {
   `;
 
   const podiumIcons = ['🥇', '🥈', '🥉'];
-  const rows = data.entries.map((e) => {
+  const rows = entriesToShow.map((e) => {
     const isCurrentUser = currentUsername !== null && e.username === currentUsername;
     const baseRowClass = 'leaderboard-row';
     const rowClasses = [baseRowClass];
@@ -301,7 +316,10 @@ function createView(): HTMLElement {
         <button type="button" class="leaderboard-pill" data-period="quarterly">Quarterly</button>
         <button type="button" class="leaderboard-pill" data-period="yearly">Yearly</button>
       </div>
-      <p class="leaderboard-subheader">Ranked by portfolio return • You appear on all time periods when you trade • Last updated: —</p>
+      <div class="leaderboard-subheader">
+        <span class="leaderboard-subheader-text">Ranked by portfolio return • You appear on all time periods when you trade • Last updated: —</span>
+        <button type="button" class="leaderboard-sync-btn" id="leaderboard-sync-btn" title="Sync portfolio to update your rank on all periods" style="display:none">↻ Sync</button>
+      </div>
       <div class="leaderboard-rank-callout leaderboard-rank-callout-hidden" role="button" tabindex="0">
         <span class="leaderboard-rank-callout-text">Your rank: #—</span>
         <span class="leaderboard-rank-callout-hint">Click to scroll to your row</span>
@@ -309,6 +327,16 @@ function createView(): HTMLElement {
       <div class="leaderboard-table-wrap"></div>
     </div>
   `;
+
+  const syncBtn = wrap.querySelector('#leaderboard-sync-btn');
+  syncBtn?.addEventListener('click', async () => {
+    if (!auth.isAuthenticated()) return;
+    const { pushLocalToServer } = await import('../trading/engine/server-sync');
+    const ok = await pushLocalToServer();
+    const { showToast } = await import('../lib/toast');
+    showToast(ok ? 'Portfolio synced — rank will update shortly' : 'Sync failed');
+    if (ok) void loadAndRender();
+  });
 
   wrap.querySelectorAll('.leaderboard-pill').forEach((btn) => {
     btn.addEventListener('click', () => {

@@ -109,8 +109,21 @@ export async function updateLeaderboardEntries(
   const periods: LeaderboardPeriod[] = ['weekly', 'monthly', 'quarterly', 'yearly'];
 
   for (const period of periods) {
-    const returnPct = computeReturn(portfolio, PERIOD_DAYS[period]);
-    if (returnPct === null) continue;
+    let returnPct = computeReturn(portfolio, PERIOD_DAYS[period]);
+    // Fallback to inception return if period has no data (e.g. new user) — ensures user appears on all periods
+    if (returnPct === null) {
+      const curve = (portfolio.equityCurve ?? []) as EquityPoint[];
+      let valueNow: number;
+      if (curve.length > 0) {
+        valueNow = curve[curve.length - 1]!.totalValue;
+      } else {
+        const positions = (portfolio.positions ?? []) as Array<{ marketValue?: number }>;
+        const marketValue = positions.reduce((s, p) => s + (p.marketValue ?? 0), 0);
+        valueNow = (portfolio.cash ?? STARTING_CAPITAL) + marketValue;
+      }
+      if (STARTING_CAPITAL <= 0) continue;
+      returnPct = (valueNow - STARTING_CAPITAL) / STARTING_CAPITAL;
+    }
 
     const key = `leaderboard:${period}`;
     const prevRankKey = `leaderboard:prev_rank:${period}:${username}`;

@@ -270,15 +270,28 @@ body {
   color: var(--text-primary);
 }
 
-/* Leaderboard view */
+/* Leaderboard view — below header, scalable */
 .leaderboard-view {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: var(--z-panels);
   background: var(--bg-primary);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: var(--spacing-lg);
-  padding-top: 4rem;
+  /* Clear header bar (top 1rem + ~2.5rem height + 1rem gap) */
+  padding-top: 5.5rem;
+  padding-bottom: var(--spacing-lg);
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .leaderboard-view {
+    padding-top: 6rem;
+  }
 }
 .leaderboard-banner {
   display: flex;
@@ -406,10 +419,30 @@ body {
   border-color: var(--border-primary);
 }
 .leaderboard-subheader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   font-size: 0.7rem;
   color: var(--text-muted);
   margin-bottom: var(--spacing-md);
   text-align: center;
+}
+.leaderboard-sync-btn {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  color: var(--text-accent);
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+.leaderboard-sync-btn:hover {
+  opacity: 0.9;
+  border-color: var(--text-accent);
 }
 .leaderboard-table-wrap {
   background: var(--bg-panel);
@@ -4698,6 +4731,8 @@ pre {
   z-index: 10001;
   opacity: 0;
   transition: opacity 0.3s ease;
+  /* Fallback background so overlay is always visible even if spotlight fails */
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .onboarding-overlay.onboarding-visible {

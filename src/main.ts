@@ -807,28 +807,32 @@ async function init(): Promise<void> {
     console.warn('[YC Hedge Fund] Command palette unavailable:', err);
   }
 
-  // Onboarding tour button — use event delegation so it works even if DOM order changes
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    if (target?.id === 'onboarding-tour-btn' || target?.closest('#onboarding-tour-btn')) {
-      e.preventDefault();
-      e.stopPropagation();
-      void (async () => {
-        try {
-          const { startOnboarding } = await import('./lib/onboarding');
-          const { getViewFromPath, navigateToDashboard } = await import('./lib/router');
-          if (getViewFromPath() === 'leaderboard') {
-            await navigateToDashboard();
-            setTimeout(() => startOnboarding({ force: true }), 300);
-          } else {
-            startOnboarding({ force: true });
+  // Onboarding tour button — use capture so we run before other handlers
+  document.addEventListener(
+    'click',
+    (e) => {
+      const target = e.target as HTMLElement;
+      if (target?.id === 'onboarding-tour-btn' || target?.closest('#onboarding-tour-btn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        void (async () => {
+          try {
+            const { startOnboarding } = await import('./lib/onboarding');
+            const { getViewFromPath, navigateToDashboard } = await import('./lib/router');
+            if (getViewFromPath() === 'leaderboard') {
+              await navigateToDashboard();
+              setTimeout(() => startOnboarding({ force: true }), 400);
+            } else {
+              startOnboarding({ force: true });
+            }
+          } catch (err) {
+            console.warn('[YC Hedge Fund] Onboarding failed:', err);
           }
-        } catch (err) {
-          console.warn('[YC Hedge Fund] Onboarding failed:', err);
-        }
-      })();
-    }
-  });
+        })();
+      }
+    },
+    { capture: true }
+  );
 
   // WebSocket relay (defer to let prices load first)
   setTimeout(initWebSockets, 1_000);
