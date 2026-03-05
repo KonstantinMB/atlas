@@ -31,15 +31,20 @@
       <a href="/" class="header-logo" aria-label="YC Hedge Fund">
         <img src="/icon-192.png" alt="YC Hedge Fund" width="32" height="32" />
       </a>
-      <nav class="header-nav-tabs" aria-label="Main navigation">
-        <button class="header-nav-tab active" data-nav="globe">Globe</button>
-        <span class="header-nav-sep">|</span>
-        <button class="header-nav-tab" data-nav="intel">Intel</button>
-        <span class="header-nav-sep">|</span>
-        <button class="header-nav-tab" data-nav="markets">Markets</button>
-        <span class="header-nav-sep">|</span>
-        <button class="header-nav-tab" data-nav="trading">Trading</button>
-      </nav>
+      <div class="header-nav-wrap">
+        <nav class="header-nav-tabs" aria-label="Main navigation">
+          <button class="header-nav-tab active" data-nav="globe">Globe</button>
+          <span class="header-nav-sep">|</span>
+          <button class="header-nav-tab" data-nav="intel">Intel</button>
+          <span class="header-nav-sep">|</span>
+          <button class="header-nav-tab" data-nav="markets">Markets</button>
+          <span class="header-nav-sep">|</span>
+          <button class="header-nav-tab" data-nav="trading">Trading</button>
+          <span class="header-nav-sep">|</span>
+          <button class="header-nav-tab" data-nav="leaderboard">Leaderboard</button>
+        </nav>
+        <button class="header-nav-back" id="dashboard-back" aria-label="Back to dashboard" style="display:none">← Dashboard</button>
+      </div>
       <div class="header-spacer"></div>
       <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme" title="Toggle dark/light theme">
         <span class="theme-icon">🌙</span>
@@ -49,6 +54,7 @@
         <span class="pt-toggle-label">Paper Trading</span>
         <span class="pt-toggle-status" id="pt-toggle-status">AUTO</span>
       </button>
+      <button id="onboarding-tour-btn" class="header-tour-btn" aria-label="Start app tour" title="Take a tour of the app">?</button>
       <div class="header-hint" id="cmd-palette-hint" title="Open command palette (Cmd+K)">⌘K</div>
       <div id="auth-nav-slot" class="auth-nav-slot"></div>
     </div>

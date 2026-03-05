@@ -64,10 +64,16 @@ export function initWelcomePopup(): void {
     overlay.classList.add('welcome-popup-closing');
     overlay.addEventListener('transitionend', () => {
       overlay.remove();
+      try {
+        localStorage.setItem(STORAGE_KEY, '1');
+      } catch { /* ignore */ }
+      // Start onboarding tour on first visit (after a short delay for panels to render)
+      import('./onboarding').then(({ startOnboarding, shouldShowOnboarding }) => {
+        if (shouldShowOnboarding()) {
+          setTimeout(() => startOnboarding(), 400);
+        }
+      });
     }, { once: true });
-    try {
-      localStorage.setItem(STORAGE_KEY, '1');
-    } catch { /* ignore */ }
   }
 
   document.body.appendChild(overlay);

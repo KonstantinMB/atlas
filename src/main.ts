@@ -169,14 +169,28 @@ async function initAuthNav(): Promise<void> {
   initAuthNav(slot);
 }
 
-// ── Header nav tabs (Globe | Intel | Markets | Trading) ───────────────────────
+// ── Routing (dashboard | leaderboard) ─────────────────────────────────────────
+
+import { getViewFromPath, navigateToLeaderboard, initRouter, setupInitialView } from './lib/router';
+
+function initRouting(): void {
+  initRouter(document.getElementById('dashboard-back'));
+}
+
+// ── Header nav tabs (Globe | Intel | Markets | Trading | Leaderboard) ─────────
 
 function initHeaderNavTabs(): void {
   const tabs = document.querySelectorAll('.header-nav-tab');
   tabs.forEach(btn => {
     btn.addEventListener('click', async () => {
       const nav = (btn as HTMLElement).dataset.nav;
-        if (nav === 'trading') {
+
+      if (nav === 'leaderboard') {
+        void navigateToLeaderboard();
+        return;
+      }
+
+      if (nav === 'trading') {
         const { auth } = await import('./auth/auth-manager');
         const isLocalOnly = sessionStorage.getItem('atlas:local-only') === '1';
         if (!auth.isAuthenticated() && !isLocalOnly) {
@@ -745,7 +759,19 @@ async function init(): Promise<void> {
 
   initThemeToggle();
   await initAuthNav();
+  initRouting();
   initHeaderNavTabs();
+
+  // Leaderboard view (created but hidden until /leaderboard)
+  const app = document.getElementById('app');
+  if (app) {
+    const { initLeaderboardView } = await import('./views/leaderboard');
+    const leaderboardEl = initLeaderboardView(app);
+    leaderboardEl.style.display = 'none';
+  }
+
+  // Initial route: if we loaded at /leaderboard, show leaderboard
+  await setupInitialView();
 
   // Intelligence engine
   try {
@@ -779,6 +805,25 @@ async function init(): Promise<void> {
     if (cmdHint) cmdHint.addEventListener('click', () => commandPalette.open());
   } catch (err) {
     console.warn('[YC Hedge Fund] Command palette unavailable:', err);
+  }
+
+  // Onboarding tour button
+  try {
+    const tourBtn = document.getElementById('onboarding-tour-btn');
+    if (tourBtn) {
+      tourBtn.addEventListener('click', async () => {
+        const { startOnboarding } = await import('./lib/onboarding');
+        const { getViewFromPath, navigateToDashboard } = await import('./lib/router');
+        if (getViewFromPath() === 'leaderboard') {
+          await navigateToDashboard();
+          setTimeout(() => startOnboarding({ force: true }), 300);
+        } else {
+          startOnboarding({ force: true });
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('[YC Hedge Fund] Onboarding tour unavailable:', err);
   }
 
   // WebSocket relay (defer to let prices load first)

@@ -21,9 +21,16 @@ You are the Trading Agent for YC Hedge Fund — a quantitative finance specialis
 - Implement exit logic (stops, trailing stops, time-based, signal reversal)
 
 ## CRITICAL: This is ALL paper trading. No real money. No real brokers.
-The engine runs CLIENT-SIDE in the browser using localStorage for persistence.
-It simulates trades with realistic slippage and tracks P&L against
-real market prices fetched from Finnhub/Yahoo Finance edge functions.
+The engine runs CLIENT-SIDE in the browser. Persistence: localStorage + Redis via server-sync.ts (debounce 5s, PUT on portfolio-updated).
+
+## Actual File Structure
+- `engine.ts` — Core, PAPER_CONFIG, Signal/Trade interfaces
+- `engine/portfolio-manager.ts` — ManagedPosition, ClosedTrade, FIFO lots, equity curve
+- `engine/paper-broker.ts` — Simulated fills
+- `engine/execution-loop.ts` — 60s cycle
+- `engine/server-sync.ts` — Auth-gated PUT to /api/trading/portfolio
+- `signals/` — signal-bus, signal-aggregator, strategies (geopolitical, sentiment, momentum, macro, cross-asset)
+- `risk/` — risk-manager, circuit-breaker, audit-log
 
 ## Paper Trading Configuration
 ```typescript
@@ -370,7 +377,14 @@ interface PerformanceMetrics {
 
 ---
 
-## Three Strategies to Implement
+## Strategies (Implemented)
+- `signals/strategies/geopolitical.ts` — CII → geo-asset-mapping
+- `signals/strategies/sentiment.ts` — GDELT tone by sector
+- `signals/strategies/momentum.ts` — SMA/RSI
+- `signals/strategies/macro.ts` — FRED yield curve, VIX
+- `signals/strategies/cross-asset.ts` — Correlation divergence
+
+## Three Core Strategy Patterns
 
 ### 1. Geopolitical Risk → Asset Mapping (geopolitical.ts)
 - **Input**: CII Z-scores from `/src/intelligence/instability.ts`

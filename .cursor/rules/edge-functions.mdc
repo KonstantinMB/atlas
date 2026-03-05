@@ -1,0 +1,37 @@
+---
+description: Vercel Edge Function patterns for Atlas API
+globs: "api/**/*.ts"
+alwaysApply: false
+---
+
+# Edge Function Standards
+
+## Required Exports
+```typescript
+export const config = { runtime: 'edge' };
+export default withCors(async (req: Request) => { ... });
+```
+
+## Caching
+- Use `withCache` from `_cache.ts` for upstream fetches
+- TTL by source: GDELT 15min, USGS 5min, Finnhub 30s, FRED 6hr
+
+## Auth-Protected Endpoints
+```typescript
+const userOrError = await requireAuth(req);
+if (userOrError instanceof Response) return userOrError;
+const user = userOrError; // { username, email }
+```
+
+## Response Shape
+```typescript
+return new Response(JSON.stringify({ data, success, error }), {
+  status: 200,
+  headers: { 'Content-Type': 'application/json', 'Cache-Control': '...' },
+});
+```
+
+## Error Handling
+- Return stale cache on upstream failure
+- Never expose stack traces in production
+- 400 for validation, 401 for auth, 503 for Redis/unavailable

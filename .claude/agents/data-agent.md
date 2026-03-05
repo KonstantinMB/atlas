@@ -475,24 +475,23 @@ The data-agent outputs are consumed by:
 
 ```
 Finnhub WS ──┐
-Yahoo REST ──┼─→ data-agent → normalize() → checkStaleness() → publish to state store
+Yahoo REST ──┼─→ market-stream → normalize → checkStaleness → state / CustomEvents
 CoinGecko ───┤                                                          ↓
-Binance WS ──┘                                                   trading-agent
-                                                                  risk-agent
-                                                                  frontend-agent
+Binance WS ──┘                                                   execution-loop
+                                                                  portfolio-manager (MTM)
+                                                                  risk-manager
+                                                                  panels (NAV, P&L)
 ```
 
 ---
 
-## File Locations
-
-You will build these files:
-
-- `/src/lib/market-data.ts` — Main data service
-- `/src/lib/websocket.ts` — WebSocket manager (already exists, extend it)
-- `/src/lib/backfill.ts` — Historical data backfill logic
-- `/src/lib/market-calendar.ts` — Market hours and holiday detection
-- `/api/market/stream.ts` — Edge function that proxies WebSocket connections (if needed)
+## File Locations (Current)
+- `src/trading/data/market-stream.ts` — Price streaming
+- `src/trading/data/historical.ts` — Backfill
+- `src/trading/data/universe.ts` — Tradeable symbols
+- `src/lib/websocket.ts` — WebSocket manager
+- `api/market/stream.ts` — Market data edge function
+- DataService in `src/lib/data-service.ts` — Event-driven polling for OSINT
 
 ---
 

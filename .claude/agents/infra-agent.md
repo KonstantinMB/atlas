@@ -34,11 +34,15 @@ You are the Infrastructure Agent for YC Hedge Fund.
 
 ## Key Files You Own
 - package.json, tsconfig.json, vite.config.ts
-- vercel.json (edge function routing)
-- .github/workflows/ci.yml
-- .env.example
-- infra/docker-compose.yml (local dev)
-- relay/railway.toml
+- vercel.json (rewrites: non-api → index.html)
+- .github/workflows/ (ci.yml, deploy.yml)
+- .env.example (UPSTASH_REDIS_REST_URL, etc.)
+- relay/ (Railway WebSocket: AIS, OpenSky, blocked RSS)
+
+## Environment
+- Vercel: env vars for API keys (Finnhub, Redis, Groq)
+- Railway: relay server for WebSocket feeds
+- Upstash: Redis for cache, auth, portfolio, sessions
 
 ## Reference
 Study https://github.com/koala73/worldmonitor for Vercel + Railway patterns.

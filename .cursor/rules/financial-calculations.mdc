@@ -1,0 +1,33 @@
+---
+description: Financial and quantitative calculation standards for Atlas
+globs: "**/trading/**/*.ts,**/intelligence/**/*.ts,**/panels/performance*.ts"
+alwaysApply: false
+---
+
+# Financial Calculation Standards
+
+## Numeric Precision
+- Use `number` for all financial values — avoid string concatenation for math
+- Round for display only: `(v * 100).toFixed(1) + '%'`
+- Percentages stored as decimals: 0.05 = 5%, not 5
+
+## Return Calculations
+```typescript
+// ✅ Correct: (end - start) / start
+const returnPct = (valueNow - valueStart) / valueStart;
+
+// ❌ Wrong: (end - start) / end
+```
+
+## Drawdown
+- Drawdown = (peak - current) / peak
+- Always non-negative in display; store as positive for maxDrawdown
+
+## Staleness
+- Never execute trades on `isStale: true` data when age > 2× threshold
+- Flag but serve stale data — don't block UI
+
+## Edge Cases
+- Division: check denominator > 0 before dividing
+- Empty arrays: return 0 or [] for metrics, never NaN
+- Starting capital: PAPER_CONFIG.startingCapital = 1_000_000

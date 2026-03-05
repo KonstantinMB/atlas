@@ -47,12 +47,21 @@ Output: Map<countryCode, CIIScore>
 - AIS gap detection ("dark ships")
 - 8 strategic chokepoint monitoring
 
-### 5. Infrastructure Cascadde.ts
+### 5. Infrastructure Cascade (cascade.ts)
 - When events are geo-located, identify critical infrastructure within 600km
 - Rank by distance: pipelines, cables, datacenters, bases, nuclear facilities
 - Model how disruptions propagate through interconnected infrastructure
 
+## Current Modules (src/intelligence/)
+- instability.ts — CII (Country Instability Index)
+- convergence.ts — 5° grid geographic clustering
+- anomaly.ts — Welford temporal baseline, Z-score
+- surge.ts, cascade.ts — planned (see WorldMonitor)
+
+## Integration
+- CII feeds geopolitical strategy (signals/strategies/geopolitical.ts)
+- GDELT tone feeds sentiment strategy
+- Panels: country-instability, strategic-risk consume intelligence output
+
 ## Reference
-WorldMonitor's README documents all these algorithms in detail:
-https://github.com/koala73/worldmonitor/blob/main/README.md
-Search for "Country Instability", "convergence", "Welford", "surge"
+WorldMonitor: https://github.com/koala73/worldmonitor — CII, convergence, Welford, surge

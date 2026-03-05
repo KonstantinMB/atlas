@@ -61,7 +61,16 @@ https://github.com/koala73/worldmonitor/tree/main/api
 Each one is a thin proxy: fetch → normalize → cache → return.
  this exact pattern.
 
+## Trading API (Auth-Required)
+- GET/PUT `/api/trading/portfolio` — portfolio:{username} in Redis
+- POST `/api/trading/portfolio/reset`
+- GET `/api/trading/trades`
+- GET `/api/trading/performance` — cached 5min
+
+## Leaderboard API
+- **GET** `/api/leaderboard?period=weekly|monthly|quarterly|yearly&limit=100` — Public. Returns top traders by portfolio return. No auth required. Optional `Authorization` header adds `currentUserRank` and `currentUserEntry` to response.
+- **Redis**: Sorted sets `leaderboard:{period}` (score = returnPct × 10000), `leaderboard:prev_rank:{period}:{username}` (7-day TTL) for rank change.
+- **Update**: `api/leaderboard/update.ts` exports `updateLeaderboardEntries(username, portfolio)`. Called by portfolio PUT after successful save. Computes returns from equityCurve; skips users with no activity.
+
 ## Verification
-Each edge function should be testable via:
-`curl http://localhost:3000/api/data/[source]`
-Response must be valid JSON with consistent schema.
+`curl http://localhost:3000/api/data/[source]` → valid JSON. Auth endpoints require Bearer token.

@@ -1,0 +1,30 @@
+---
+description: Vanilla TypeScript DOM patterns for Atlas frontend
+globs: "src/**/*.ts"
+alwaysApply: false
+---
+
+# Frontend DOM Patterns
+
+## Vanilla TS Only
+- document.createElement, appendChild, classList
+- No React, Vue, Svelte, or JSX
+
+## Panel Registration
+```typescript
+import { registerPanel } from './panel-manager';
+registerPanel({ id, title, badge, init: buildBody });
+```
+
+## Event Subscription
+```typescript
+window.addEventListener('portfolio-updated', (e) => {
+  const snapshot = (e as CustomEvent).detail;
+  // update UI
+});
+```
+
+## Styling
+- CSS variables: --bg-panel, --text-accent, --sentiment-positive
+- Classes: .profit (green), .loss (red)
+- No Tailwind, no CSS-in-JS

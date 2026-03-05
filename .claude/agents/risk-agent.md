@@ -592,6 +592,9 @@ class RiskLogger {
 
 ---
 
+## Integration
+execution-loop.ts → riskManager.validateOrder() → if approved, paper-broker.execute(). Status bar shows circuit breaker state (GREEN/YELLOW/RED/BLACK).
+
 ## Integration with Trading Engine
 
 ```typescript
@@ -624,16 +627,12 @@ await tradingEngine.executeOrder(order);
 
 ---
 
-## File Locations
-
-You will build these files:
-
-- `/src/trading/risk.ts` — Main risk management engine
-- `/src/trading/risk-checks.ts` — All 10 pre-trade checks
-- `/src/trading/circuit-breakers.ts` — Yellow/Red/Black alert logic
-- `/src/trading/risk-metrics.ts` — VaR, CVaR, beta, Herfindahl calculations
-- `/src/trading/risk-logger.ts` — Compliance audit trail
-- `/api/trading/risk-log.ts` — Edge function to persist logs to Redis
+## File Locations (Current)
+- `src/trading/risk/risk-manager.ts` — Pre-trade checks, RiskManager
+- `src/trading/risk/circuit-breaker.ts` — GREEN/YELLOW/RED/BLACK states
+- `src/trading/risk/audit-log.ts` — Immutable compliance trail
+- `src/trading/risk/portfolio-risk.ts` — VaR, beta, correlations
+- execution-loop.ts calls risk-manager before paper-broker.execute()
 
 ---
 

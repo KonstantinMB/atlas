@@ -12,6 +12,9 @@ YC Hedge Fund is a WorldMonitor-class intelligence dashboard built entirely with
 
 The unique differentiator: the "Globe Risk Heatmap" makes your portfolio exposure **physically visible** — countries glow red when your paper positions are geopolitically exposed there, and flash yellow when a new signal fires for that region.
 
+### Features
+- Paper trading leaderboard (weekly, monthly, quarterly, yearly returns) at `/leaderboard`
+
 ---
 
 ## Setup

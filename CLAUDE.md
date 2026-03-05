@@ -112,6 +112,9 @@ yc-hedge-fund/
 │   │   ├── me.ts                ← GET /api/auth/me (session lookup)
 │   │   ├── session.ts           ← GET /api/auth/session (user + expiresAt)
 │   │   └── logout.ts            ← POST /api/auth/logout
+│   ├── leaderboard/             ← Paper trading leaderboard
+│   │   ├── index.ts             ← GET /api/leaderboard (period, limit)
+│   │   └── update.ts            ← updateLeaderboardEntries helper (called on portfolio PUT)
 │   └── trading/                 ← Paper trading state API
 │       ├── portfolio.ts         ← GET/PUT portfolio (Redis-backed)
 │       ├── portfolio/
@@ -165,8 +168,11 @@ yc-hedge-fund/
 │   │   ├── cache.ts             ← Client-side request cache
 │   │   ├── websocket.ts         ← WebSocket manager (auto-reconnect)
 │   │   ├── state.ts             ← Reactive store (simple pub/sub)
+│   │   ├── router.ts            ← Client-side routing (dashboard | leaderboard)
 │   │   ├── geo.ts               ← Haversine, grid binning
 │   │   └── formatters.ts        ← Numbers, dates, currencies
+│   ├── views/                   ← Full-page views
+│   │   └── leaderboard.ts       ← Leaderboard page at /leaderboard
 │   └── data/                    ← Static datasets (JSON, baked into build)
 │       ├── military-bases.json
 │       ├── nuclear-facilities.json
@@ -226,7 +232,7 @@ yc-hedge-fund/
 | AI Inference | Groq | Free tier | $0 |
 | **Total** | | | **$5-15/mo** |
 
-## Redis Key Schema (Auth + Trading)
+## Redis Key Schema (Auth + Trading + Leaderboard)
 
 See **Authentication System** section above for auth keys. Trading keys:
 
@@ -236,6 +242,16 @@ See **Authentication System** section above for auth keys. Trading keys:
 | `portfolio:{username}:archived:{ts}` | Archived portfolio (on reset) | 90 days |
 | `trades:{username}` | JSON array `[ ... trade history, last 5000 ... ]` | — |
 | `performance:{username}` | JSON `{ ... cached metrics ... }` | 5 min |
+
+Leaderboard keys:
+
+| Key | Type | Score | Member | TTL |
+|-----|------|-------|--------|-----|
+| `leaderboard:weekly` | Sorted Set | return % × 10000 | username | — |
+| `leaderboard:monthly` | Sorted Set | same | username | — |
+| `leaderboard:quarterly` | Sorted Set | same | username | — |
+| `leaderboard:yearly` | Sorted Set | same | username | — |
+| `leaderboard:prev_rank:{period}:{username}` | String | — | previous rank (1–N) | 7 days |
 
 ## Paper Trading Configuration
 ```typescript
@@ -309,7 +325,14 @@ const PAPER_CONFIG = {
 - [x] Phase 5: Railway WebSocket relay (AIS+OpenSky multiplexer, exponential-backoff reconnect) ✅
 - [x] Phase 5: Final integration — paper trading toggle, bottom status bar, keyboard shortcuts (T/S/P/Space/Esc), globe signal flash, bootstrap first-visit equity seed ✅
 - [x] Phase 5: Production deploy to Vercel — https://atlas-rouge-one.vercel.app ✅
+- [x] Phase 5: Paper trading leaderboard at /leaderboard (weekly/monthly/quarterly/yearly returns, rank change, podium, hover tooltips) ✅
 - [x] MVP COMPLETE — all phases shipped 🚀
+
+## Agents, Rules & Skills
+- **Agents**: `.claude/agents/` — orchestrator, api, frontend, trading, data, risk, intelligence, infra
+- **Rules**: `.cursor/rules/` — atlas-conventions (always), financial-calculations, edge-functions
+- **Skills**: `.cursor/skills/` — atlas-geopolitics-asset-mapping, atlas-paper-trading-flow, atlas-intelligence-integration
+- **Orchestrator**: Coordinates multi-agent work; enforces flow: data → intelligence → signals → risk → execution → UI
 
 ## Coding Conventions
 - Vanilla TypeScript — NO React, NO Vue, NO Angular, NO Svelte

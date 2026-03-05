@@ -18,6 +18,7 @@
 import { withCors } from '../_cors';
 import { requireAuth } from '../auth/_middleware';
 import { getAuthRedis } from '../auth/_redis';
+import { updateLeaderboardEntries } from '../leaderboard/update';
 
 export const config = { runtime: 'edge' };
 
@@ -133,6 +134,9 @@ export default withCors(async (req: Request) => {
     };
 
     await redis.set(key, payload);
+
+    // Update leaderboard (fire-and-forget; don't block response)
+    void updateLeaderboardEntries(user.username, payload as unknown as Parameters<typeof updateLeaderboardEntries>[1]);
 
     return jsonResponse({ success: true, savedAt: Date.now() }, 200);
   }

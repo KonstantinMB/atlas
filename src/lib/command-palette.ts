@@ -430,7 +430,49 @@ export class CommandPalette {
       },
     ];
 
-    [...flyToCommands, ...themeCommands, ...layerCommands, ...panelCommands, ...tradingCommands]
+    const navCommands: Command[] = [
+      {
+        id: 'start-tour',
+        label: 'Start App Tour',
+        description: 'Walk through the app with an interactive tour',
+        category: 'Navigation',
+        icon: '?',
+        action: async () => {
+          const { startOnboarding } = await import('./onboarding');
+          const { getViewFromPath, navigateToDashboard } = await import('./router');
+          if (getViewFromPath() === 'leaderboard') {
+            await navigateToDashboard();
+            setTimeout(() => startOnboarding({ force: true }), 300);
+          } else {
+            startOnboarding({ force: true });
+          }
+        },
+      },
+      {
+        id: 'go-dashboard',
+        label: 'Go to Dashboard',
+        description: 'Return to the main globe and panels view',
+        category: 'Navigation',
+        icon: '◀',
+        action: async () => {
+          const { navigateToDashboard } = await import('./router');
+          await navigateToDashboard();
+        },
+      },
+      {
+        id: 'go-leaderboard',
+        label: 'Go to Leaderboard',
+        description: 'View the paper trading leaderboard',
+        category: 'Navigation',
+        icon: '🏆',
+        action: async () => {
+          const { navigateToLeaderboard } = await import('./router');
+          await navigateToLeaderboard();
+        },
+      },
+    ];
+
+    [...flyToCommands, ...navCommands, ...themeCommands, ...layerCommands, ...panelCommands, ...tradingCommands]
       .forEach(cmd => this.register(cmd));
   }
 }
