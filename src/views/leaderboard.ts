@@ -153,10 +153,7 @@ function renderTable(data: LeaderboardResponse): void {
   if (!tableWrap || !subheaderText) return;
 
   subheaderText.textContent = `Ranked by portfolio return • You appear on all time periods when you trade • Last updated: ${formatTime(data.updatedAt)}`;
-  const syncBtn = containerEl.querySelector('#leaderboard-sync-btn');
-  if (syncBtn) {
-    (syncBtn as HTMLElement).style.display = auth.isAuthenticated() ? '' : 'none';
-  }
+  updateAuthActionsVisibility();
 
   // Your rank callout: show when logged in and user not in top 10
   const userRank = data.currentUserRank ?? (data.currentUserEntry?.rank);
@@ -254,10 +251,21 @@ function escapeAttr(s: string): string {
   return s.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+function updateAuthActionsVisibility(): void {
+  if (!containerEl) return;
+  const show = auth.isAuthenticated();
+  const syncBtn = containerEl.querySelector('#leaderboard-sync-btn');
+  const profileBtn = containerEl.querySelector('#leaderboard-profile-btn');
+  if (syncBtn) (syncBtn as HTMLElement).style.display = show ? '' : 'none';
+  if (profileBtn) (profileBtn as HTMLElement).style.display = show ? '' : 'none';
+}
+
 function renderBanner(): void {
   if (!containerEl) return;
   const banner = containerEl.querySelector('.leaderboard-banner');
   if (!banner) return;
+
+  updateAuthActionsVisibility();
 
   if (auth.isAuthenticated()) {
     banner.classList.add('leaderboard-banner-hidden');
@@ -284,6 +292,7 @@ async function loadAndRender(): Promise<void> {
     if (tableWrap) {
       tableWrap.innerHTML = '<div class="leaderboard-error"><p>Failed to load leaderboard. Try again later.</p></div>';
     }
+    updateAuthActionsVisibility();
     return;
   }
 
@@ -337,7 +346,10 @@ function createView(): HTMLElement {
       </div>
       <div class="leaderboard-subheader">
         <span class="leaderboard-subheader-text">Ranked by portfolio return • You appear on all time periods when you trade • Last updated: —</span>
-        <button type="button" class="leaderboard-sync-btn" id="leaderboard-sync-btn" title="Sync portfolio to update your rank on all periods" style="display:none">↻ Sync</button>
+        <div class="leaderboard-subheader-actions">
+          <button type="button" class="leaderboard-profile-btn" id="leaderboard-profile-btn" title="Edit your display name for the leaderboard" style="display:none">✎ Edit Profile</button>
+          <button type="button" class="leaderboard-sync-btn" id="leaderboard-sync-btn" title="Sync portfolio to update your rank on all periods" style="display:none">↻ Sync</button>
+        </div>
       </div>
       <div class="leaderboard-rank-callout leaderboard-rank-callout-hidden" role="button" tabindex="0">
         <span class="leaderboard-rank-callout-text">Your rank: #—</span>
@@ -355,6 +367,11 @@ function createView(): HTMLElement {
     const { showToast } = await import('../lib/toast');
     showToast(ok ? 'Portfolio synced — rank will update shortly' : 'Sync failed');
     if (ok) void loadAndRender();
+  });
+
+  const profileBtn = wrap.querySelector('#leaderboard-profile-btn');
+  profileBtn?.addEventListener('click', () => {
+    import('../auth/profile-modal').then(({ openProfileModal }) => openProfileModal());
   });
 
   wrap.querySelectorAll('.leaderboard-pill').forEach((btn) => {

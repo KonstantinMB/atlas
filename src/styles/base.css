@@ -448,6 +448,13 @@ body {
   margin-bottom: var(--spacing-md);
   text-align: center;
 }
+.leaderboard-subheader-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.leaderboard-profile-btn,
 .leaderboard-sync-btn {
   padding: 0.2rem 0.5rem;
   font-size: 0.65rem;
@@ -459,6 +466,7 @@ body {
   cursor: pointer;
   transition: opacity 0.15s, border-color 0.15s;
 }
+.leaderboard-profile-btn:hover,
 .leaderboard-sync-btn:hover {
   opacity: 0.9;
   border-color: var(--text-accent);
