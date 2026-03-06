@@ -4747,7 +4747,8 @@ pre {
 
 .onboarding-tooltip {
   position: relative;
-  max-width: 320px;
+  width: 300px;
+  max-width: min(320px, 90vw);
   min-width: 280px;
   background: var(--bg-panel);
   border: 1px solid var(--border-primary);
@@ -4755,6 +4756,7 @@ pre {
   padding: 1.25rem 1.5rem;
   box-shadow: var(--shadow-lg);
   font-family: var(--font-sans);
+  overflow: visible;
 }
 
 .onboarding-tooltip-progress {
@@ -4779,6 +4781,8 @@ pre {
   line-height: 1.5;
   color: var(--text-secondary);
   margin: 0 0 1rem;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .onboarding-tooltip-actions {

@@ -42,14 +42,14 @@ const STEPS: OnboardingStep[] = [
     target: '[data-panel-id="signals"]',
     title: 'Trading Signals',
     body: 'AI-generated signals from geopolitics, sentiment, and macro data. Execute paper trades or enable auto-execute.',
-    placement: 'left',
+    placement: 'right',
   },
   {
     id: 'portfolio',
     target: '[data-panel-id="portfolio"]',
     title: 'Portfolio',
     body: 'Your $1M paper portfolio. Positions, P&L, sector exposure. Sign in to persist across devices.',
-    placement: 'left',
+    placement: 'right',
   },
   {
     id: 'right-panel',
@@ -88,17 +88,25 @@ function getTargetRect(selector: string): DOMRect | null {
   return rect;
 }
 
+const SPOTLIGHT_PADDING = 6; // Visual breathing room so highlight aligns with UI
+
 function createSpotlight(rect: DOMRect): HTMLElement {
+  const p = SPOTLIGHT_PADDING;
+  const left = rect.left - p;
+  const top = rect.top - p;
+  const width = Math.max(rect.width + p * 2, 40);
+  const height = Math.max(rect.height + p * 2, 40);
+
   const spotlight = document.createElement('div');
   spotlight.className = 'onboarding-spotlight';
   spotlight.style.cssText = `
     position: fixed;
-    left: ${rect.left}px;
-    top: ${rect.top}px;
-    width: ${Math.max(rect.width, 40)}px;
-    height: ${Math.max(rect.height, 40)}px;
+    left: ${left}px;
+    top: ${top}px;
+    width: ${width}px;
+    height: ${height}px;
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.82);
-    border-radius: 6px;
+    border-radius: 8px;
     border: 2px solid var(--text-accent);
     pointer-events: auto;
     z-index: 100000;
@@ -130,8 +138,15 @@ function createTooltip(step: OnboardingStep, rect: DOMRect): HTMLElement {
     top = vh / 2;
     transform = 'translate(-50%, -50%)';
   } else {
-    const placement = step.placement ?? 'bottom';
+    let placement = step.placement ?? 'bottom';
     left = rect.left + rect.width / 2;
+
+    // Prevent tooltip from being clipped: prefer placement that keeps it in viewport
+    if (placement === 'left' && rect.left - TOOLTIP_EST_WIDTH - padding < 0) {
+      placement = 'right';
+    } else if (placement === 'right' && rect.right + TOOLTIP_EST_WIDTH + padding > vw) {
+      placement = 'left';
+    }
 
     if (placement === 'bottom') {
       top = rect.bottom + padding;
@@ -194,7 +209,7 @@ function escapeHtml(s: string): string {
 
 function scrollTargetIntoView(selector: string): void {
   const el = document.querySelector(selector);
-  el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el?.scrollIntoView({ behavior: 'auto', block: 'center' });
 }
 
 function renderStep(): void {
@@ -205,48 +220,52 @@ function renderStep(): void {
 
   scrollTargetIntoView(step.target);
 
-  const rect = getTargetRect(step.target);
-  if (!rect) {
-    // Target not found — show tooltip centered
-    const fallbackRect = new DOMRect(
-      window.innerWidth / 2 - 150,
-      window.innerHeight / 2 - 80,
-      300,
-      160
-    );
-    overlay.querySelector('.onboarding-spotlight')?.remove();
-    overlay.querySelector('.onboarding-tooltip')?.remove();
-    const tooltip = createTooltip(step, fallbackRect);
-    tooltip.style.left = '50%';
-    tooltip.style.top = '50%';
-    tooltip.style.transform = 'translate(-50%, -50%)';
-    overlay.appendChild(tooltip);
-  } else {
-    overlay.querySelector('.onboarding-spotlight')?.remove();
-    overlay.querySelector('.onboarding-tooltip')?.remove();
-    overlay.appendChild(createSpotlight(rect));
-    overlay.appendChild(createTooltip(step, rect));
-  }
-
-  // Re-attach button listeners
-  const skipBtn = overlay.querySelector('#onboarding-skip');
-  const backBtn = overlay.querySelector('#onboarding-back');
-  const nextBtn = overlay.querySelector('#onboarding-next');
-
-  skipBtn?.addEventListener('click', () => complete(true));
-  backBtn?.addEventListener('click', () => {
-    if (currentStepIndex > 0) {
-      currentStepIndex--;
-      renderStep();
-    }
-  });
-  nextBtn?.addEventListener('click', () => {
-    if (currentStepIndex < STEPS.length - 1) {
-      currentStepIndex++;
-      renderStep();
+  // Measure after layout settles (scroll is instant; rAF ensures layout is done)
+  requestAnimationFrame(() => {
+    if (!overlay) return;
+    const rect = getTargetRect(step.target);
+    if (!rect) {
+      // Target not found — show tooltip centered
+      const fallbackRect = new DOMRect(
+        window.innerWidth / 2 - 150,
+        window.innerHeight / 2 - 80,
+        300,
+        160
+      );
+      overlay.querySelector('.onboarding-spotlight')?.remove();
+      overlay.querySelector('.onboarding-tooltip')?.remove();
+      const tooltip = createTooltip(step, fallbackRect);
+      tooltip.style.left = '50%';
+      tooltip.style.top = '50%';
+      tooltip.style.transform = 'translate(-50%, -50%)';
+      overlay.appendChild(tooltip);
     } else {
-      complete(false);
+      overlay.querySelector('.onboarding-spotlight')?.remove();
+      overlay.querySelector('.onboarding-tooltip')?.remove();
+      overlay.appendChild(createSpotlight(rect));
+      overlay.appendChild(createTooltip(step, rect));
     }
+
+    // Re-attach button listeners
+    const skipBtn = overlay.querySelector('#onboarding-skip');
+    const backBtn = overlay.querySelector('#onboarding-back');
+    const nextBtn = overlay.querySelector('#onboarding-next');
+
+    skipBtn?.addEventListener('click', () => complete(true));
+    backBtn?.addEventListener('click', () => {
+      if (currentStepIndex > 0) {
+        currentStepIndex--;
+        renderStep();
+      }
+    });
+    nextBtn?.addEventListener('click', () => {
+      if (currentStepIndex < STEPS.length - 1) {
+        currentStepIndex++;
+        renderStep();
+      } else {
+        complete(false);
+      }
+    });
   });
 }
 
