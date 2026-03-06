@@ -107,6 +107,7 @@ async function initPanels(): Promise<void> {
     { name: 'news-feed',           loader: () => import('./panels/news-feed'),            fn: 'initNewsFeedPanel' },
     { name: 'ai-insights',         loader: () => import('./panels/ai-insights'),          fn: 'initAIInsightsPanel' },
     { name: 'markets',             loader: () => import('./panels/markets'),              fn: 'initMarketsPanel' },
+    { name: 'prediction-markets',  loader: () => import('./panels/prediction-markets'),   fn: 'initPredictionMarketsPanel' },
     { name: 'country-instability', loader: () => import('./panels/country-instability'), fn: 'initInstabilityPanel' },
   ];
 
@@ -125,6 +126,25 @@ async function initPanels(): Promise<void> {
 
   dataService.startPolling();
   console.log('[YC Hedge Fund] Data polling started');
+
+  // ── Wire prediction market metrics to state ─────────────────────────────────
+  dataService.addEventListener('polymarket-metrics', ((e: CustomEvent) => {
+    const data = e.detail;
+    if (!data?.markets) return;
+
+    // Transform MarketMetrics[] to PredictionMarketMomentum[]
+    const predictionMarkets = data.markets.map((m: any) => ({
+      marketId: m.marketId,
+      title: m.title,
+      category: m.category || 'Global Events',
+      sentimentMomentum: m.sentimentMomentum,
+      probability: m.probability,
+      lastUpdated: m.lastUpdated,
+    }));
+
+    state.set('predictionMarkets', predictionMarkets);
+    console.log(`[YC Hedge Fund] Prediction markets updated: ${predictionMarkets.length} markets`);
+  }) as EventListener);
 }
 
 // ── WebSocket relay ───────────────────────────────────────────────────────────

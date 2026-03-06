@@ -23,8 +23,8 @@ function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
-async function putToServer(): Promise<void> {
-  if (!auth.isAuthenticated()) return;
+async function putToServer(): Promise<boolean> {
+  if (!auth.isAuthenticated()) return false;
 
   const payload = portfolioManager.getStoredPayload();
 
@@ -37,9 +37,12 @@ async function putToServer(): Promise<void> {
     });
     if (!res.ok) {
       pendingRetry = true;
+      return false;
     }
+    return true;
   } catch {
     pendingRetry = true;
+    return false;
   }
 }
 
@@ -63,8 +66,7 @@ function isServerDefault(data: Record<string, unknown>): boolean {
 export async function pushLocalToServer(): Promise<boolean> {
   if (!auth.isAuthenticated()) return false;
   try {
-    await putToServer();
-    return true;
+    return await putToServer();
   } catch {
     return false;
   }

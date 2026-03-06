@@ -32,3 +32,4 @@
 - atlas-geopolitics-asset-mapping — CII → geo-asset-mapping → signals
 - atlas-paper-trading-flow — engine → portfolio → server-sync
 - atlas-intelligence-integration — intelligence modules → strategies
+- atlas-prediction-markets — Polymarket data, sentiment momentum, signal boost

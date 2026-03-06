@@ -135,8 +135,8 @@ export default withCors(async (req: Request) => {
 
     await redis.set(key, payload);
 
-    // Update leaderboard (fire-and-forget; don't block response)
-    void updateLeaderboardEntries(user.username, payload as unknown as Parameters<typeof updateLeaderboardEntries>[1]);
+    // Update leaderboard before responding so sync reflects immediately
+    await updateLeaderboardEntries(user.username, payload as unknown as Parameters<typeof updateLeaderboardEntries>[1]);
 
     return jsonResponse({ success: true, savedAt: Date.now() }, 200);
   }

@@ -3,21 +3,15 @@
  *
  * Fetches active prediction markets from Polymarket's Gamma API.
  * No API key required. 5-minute cache.
+ *
+ * Returns normalized PredictionMarket[] with volume24h, outcomePrices, etc.
  */
 
 import { withCors } from '../_cors';
 import { withCache } from '../_cache';
+import type { PredictionMarket } from '../../src/lib/prediction-markets';
 
 export const config = { runtime: 'edge' };
-
-interface PredictionMarket {
-  id: string;
-  title: string;
-  probability: number;
-  volume: number;
-  category: string;
-  endDate: number;
-}
 
 interface PolymarketRawMarket {
   id?: string;
@@ -45,7 +39,7 @@ function parseVolume(v: string | number | undefined): number {
   return isNaN(n) ? 0 : n;
 }
 
-function parseProbability(market: PolymarketRawMarket): number {
+function parseOutcomePrices(market: PolymarketRawMarket): [number, number] {
   try {
     // outcomePrices is often a JSON string like "[\"0.65\",\"0.35\"]"
     let prices: string[] | undefined;
@@ -56,14 +50,18 @@ function parseProbability(market: PolymarketRawMarket): number {
       prices = market.outcomePrices;
     }
 
-    if (prices && prices.length > 0) {
-      const p = parseFloat(prices[0] ?? '0.5');
-      return isNaN(p) ? 0.5 : Math.max(0, Math.min(1, p));
+    if (prices && prices.length >= 2) {
+      const yes = parseFloat(prices[0] ?? '0.5');
+      const no = parseFloat(prices[1] ?? '0.5');
+      return [
+        isNaN(yes) ? 0.5 : Math.max(0, Math.min(1, yes)),
+        isNaN(no) ? 0.5 : Math.max(0, Math.min(1, no)),
+      ];
     }
   } catch {
     // ignore JSON parse errors
   }
-  return 0.5;
+  return [0.5, 0.5];
 }
 
 function parseCategory(event: PolymarketRawEvent): string {
@@ -90,19 +88,24 @@ function normalize(raw: PolymarketRawEvent[]): PredictionMarket[] {
     .filter((e) => e.id || e.title)
     .map((event) => {
       const market = event.markets?.[0];
-      const probability = market ? parseProbability(market) : 0.5;
+      const outcomePrices = market ? parseOutcomePrices(market) : [0.5, 0.5] as [number, number];
+      const probability = outcomePrices[0]; // Yes price
       const endDateMs = event.endDate ? Date.parse(event.endDate) : 0;
+      const volumeTotal = parseVolume(event.volume);
 
       return {
         id: String(event.id || event.title || Math.random()),
+        source: 'polymarket' as const,
         title: event.title || '',
         probability,
-        volume: parseVolume(event.volume),
+        volume24h: volumeTotal, // Gamma doesn't separate 24h vs total; approximate as total for now
+        volumeTotal,
         category: parseCategory(event),
         endDate: isNaN(endDateMs) ? 0 : endDateMs,
+        outcomePrices,
       };
     })
-    .sort((a, b) => b.volume - a.volume);
+    .sort((a, b) => b.volumeTotal - a.volumeTotal);
 }
 
 export default withCors(async (_req: Request) => {

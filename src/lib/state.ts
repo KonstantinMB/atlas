@@ -65,6 +65,18 @@ class Observable<T> {
 }
 
 /**
+ * Prediction market momentum for trading signals
+ */
+export interface PredictionMarketMomentum {
+  marketId: string;
+  title: string;
+  category: string;
+  sentimentMomentum: number; // -1 to +1
+  probability: number; // 0 to 1
+  lastUpdated: number;
+}
+
+/**
  * Application state interface
  */
 interface AppState {
@@ -121,6 +133,9 @@ interface AppState {
     ais: boolean;
     opensky: boolean;
   };
+
+  // Prediction market sentiment momentum (for signal engine)
+  predictionMarkets: PredictionMarketMomentum[];
 }
 
 /**
@@ -247,6 +262,8 @@ const initialState: AppState = {
     ais: false,
     opensky: false,
   },
+
+  predictionMarkets: [],
 };
 
 // Global store instance

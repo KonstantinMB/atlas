@@ -81,16 +81,19 @@ function computeReturn(
 
 /**
  * Minimum activity: skip if user has no meaningful activity.
+ * Include users whose NAV differs from starting capital (gains/losses).
  */
 function hasMinimumActivity(portfolio: StoredPortfolio): boolean {
   const positions = portfolio.positions ?? [];
   const closedTrades = portfolio.closedTrades ?? [];
   const equityCurve = (portfolio.equityCurve ?? []) as EquityPoint[];
-  return (
-    positions.length > 0 ||
-    closedTrades.length > 0 ||
-    equityCurve.length >= 2
-  );
+  if (positions.length > 0 || closedTrades.length > 0 || equityCurve.length >= 2) {
+    return true;
+  }
+  // NAV different from starting capital = meaningful activity
+  const positionsVal = (positions as Array<{ marketValue?: number }>).reduce((s, p) => s + (p.marketValue ?? 0), 0);
+  const nav = (portfolio.cash ?? STARTING_CAPITAL) + positionsVal;
+  return Math.abs(nav - STARTING_CAPITAL) > 0.01;
 }
 
 /**

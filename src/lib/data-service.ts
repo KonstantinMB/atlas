@@ -5,6 +5,7 @@
  */
 
 import { api } from './api-client';
+import type { MarketMetrics, PolymarketMetricsResponse } from './prediction-markets';
 
 // ── Response types matching the edge function schemas ──────────────────────────
 
@@ -93,6 +94,12 @@ export interface FearGreedData {
   nextUpdate: number;
 }
 
+export interface PolymarketMetricsDetail {
+  markets: MarketMetrics[];
+  timestamp: number;
+  lastFetch: number;
+}
+
 // ── Event detail shapes ────────────────────────────────────────────────────────
 
 export interface GdeltDetail {
@@ -125,6 +132,7 @@ class DataService extends EventTarget {
   private yahoo: YahooDetail | null = null;
   private crypto: CryptoDetail | null = null;
   private macroRadar: MacroRadarDetail | null = null;
+  private polymarketMetrics: PolymarketMetricsDetail | null = null;
 
   // Accessors for current cached state (panels can call these after events fire)
   getGdelt(): GdeltDetail | null { return this.gdelt; }
@@ -134,6 +142,7 @@ class DataService extends EventTarget {
   getYahoo(): YahooDetail | null { return this.yahoo; }
   getCrypto(): CryptoDetail | null { return this.crypto; }
   getMacroRadar(): MacroRadarDetail | null { return this.macroRadar; }
+  getPolymarketMetrics(): PolymarketMetricsDetail | null { return this.polymarketMetrics; }
 
   async fetchGdelt(): Promise<void> {
     try {
@@ -237,6 +246,27 @@ class DataService extends EventTarget {
     }
   }
 
+  async fetchPolymarketMetrics(): Promise<void> {
+    try {
+      const data = await api.fetch<PolymarketMetricsResponse>(
+        '/api/osint/polymarket-metrics',
+        300_000 // 5 min TTL
+      );
+      this.polymarketMetrics = {
+        markets: data.markets ?? [],
+        timestamp: data.timestamp,
+        lastFetch: Date.now(),
+      };
+      this.dispatchEvent(
+        new CustomEvent<PolymarketMetricsDetail>('polymarket-metrics', {
+          detail: this.polymarketMetrics,
+        })
+      );
+    } catch (err) {
+      console.error('[DataService] Polymarket metrics fetch failed:', err);
+    }
+  }
+
   /**
    * Start polling all data sources on staggered intervals.
    * Call once after all panels have been initialized.
@@ -252,6 +282,7 @@ class DataService extends EventTarget {
       void this.fetchUsgs();
       void this.fetchGdacs();
     }, 3_000);
+    setTimeout(() => { void this.fetchPolymarketMetrics(); }, 5_000);
 
     // Recurring polls
     setInterval(() => { void this.fetchYahoo(); }, 60_000);
@@ -261,6 +292,7 @@ class DataService extends EventTarget {
     setInterval(() => { void this.fetchGdacs(); }, 1_800_000);
     setInterval(() => { void this.fetchCrypto(); }, 60_000);
     setInterval(() => { void this.fetchMacroRadar(); }, 300_000);
+    setInterval(() => { void this.fetchPolymarketMetrics(); }, 300_000);
   }
 }
 

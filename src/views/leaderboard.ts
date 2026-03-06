@@ -362,11 +362,13 @@ function createView(): HTMLElement {
   const syncBtn = wrap.querySelector('#leaderboard-sync-btn');
   syncBtn?.addEventListener('click', async () => {
     if (!auth.isAuthenticated()) return;
+    (syncBtn as HTMLButtonElement).disabled = true;
     const { pushLocalToServer } = await import('../trading/engine/server-sync');
     const ok = await pushLocalToServer();
+    (syncBtn as HTMLButtonElement).disabled = false;
     const { showToast } = await import('../lib/toast');
-    showToast(ok ? 'Portfolio synced — rank will update shortly' : 'Sync failed');
-    if (ok) void loadAndRender();
+    showToast(ok ? 'Portfolio synced — rank will update shortly' : 'Sync failed — check connection');
+    if (ok) setTimeout(() => void loadAndRender(), 400);
   });
 
   const profileBtn = wrap.querySelector('#leaderboard-profile-btn');

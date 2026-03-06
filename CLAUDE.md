@@ -95,7 +95,9 @@ yc-hedge-fund/
 │   │   ├── opensky.ts           ← Aircraft (via Railway relay, free account)
 │   │   ├── ais.ts               ← Vessels (via Railway relay, free key)
 │   │   ├── sanctions.ts         ← OpenSanctions bulk (daily cache, no key)
-│   │   └── polymarket.ts        ← Prediction markets (5-min cache, no key)
+│   │   ├── polymarket.ts        ← Prediction markets (5-min cache, no key)
+│   │   ├── polymarket-history.ts ← CLOB historical prices (planned)
+│   │   └── polymarket-metrics.ts ← Aggregated metrics + sentiment momentum (planned)
 │   ├── rss/
 │   │   ├── proxy.ts             ← Domain-allowlisted RSS proxy
 │   │   └── feeds.json           ← 50+ feed definitions with source tiers
@@ -150,7 +152,8 @@ yc-hedge-fund/
 │   │   ├── strategic-risk.ts    ← Risk gauge
 │   │   ├── markets.ts           ← Financial data panel
 │   │   ├── signals.ts           ← Trading signals with confidence
-│   │   └── portfolio.ts         ← Paper portfolio P&L
+│   │   ├── portfolio.ts         ← Paper portfolio P&L
+│   │   └── prediction-markets.ts ← Prediction markets (planned)
 │   ├── trading/                 ← Paper trading engine (client-side)
 │   │   ├── engine.ts            ← Core state machine
 │   │   ├── portfolio.ts         ← Position tracking, P&L
@@ -185,7 +188,9 @@ yc-hedge-fund/
 ├── docs/
 │   ├── PRD.md
 │   ├── MVP-PLAN.md
-│   └── DATA-SOURCES.md
+│   ├── DATA-SOURCES.md
+│   ├── LEADERBOARD-PROMPT-STRATEGY.md
+│   └── PREDICTION-MARKETS-PROMPT-STRATEGY.md
 ├── scripts/
 │   ├── setup.sh
 │   └── generate-mock-trades.ts
@@ -331,7 +336,7 @@ const PAPER_CONFIG = {
 ## Agents, Rules & Skills
 - **Agents**: `.claude/agents/` — orchestrator, api, frontend, trading, data, risk, intelligence, infra
 - **Rules**: `.cursor/rules/` — atlas-conventions (always), financial-calculations, edge-functions
-- **Skills**: `.cursor/skills/` — atlas-geopolitics-asset-mapping, atlas-paper-trading-flow, atlas-intelligence-integration
+- **Skills**: `.cursor/skills/` — atlas-geopolitics-asset-mapping, atlas-paper-trading-flow, atlas-intelligence-integration, atlas-prediction-markets
 - **Orchestrator**: Coordinates multi-agent work; enforces flow: data → intelligence → signals → risk → execution → UI
 
 ## Coding Conventions

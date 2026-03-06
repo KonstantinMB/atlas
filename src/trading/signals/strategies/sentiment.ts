@@ -13,6 +13,8 @@
 import type { Signal } from '../../engine';
 import { signalBus } from '../signal-bus';
 import { SECTOR_TO_SYMBOLS } from '../../data/universe';
+import { getStore } from '../../../lib/state';
+import type { PredictionMarketMomentum } from '../../../lib/state';
 
 const STRATEGY_NAME = 'sentiment';
 const UPDATE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
@@ -139,6 +141,65 @@ function aggregateSentimentBySector(): Map<string, SectorSentiment> {
 }
 
 /**
+ * Get prediction market momentum boost for a sector
+ * Returns: { boost: number (-0.05 to +0.05), snippet: string }
+ */
+function getPredictionMarketBoost(sector: string, direction: 'LONG' | 'SHORT'): { boost: number; snippet: string } {
+  try {
+    const store = getStore();
+    const predictionMarkets = store.get('predictionMarkets') as PredictionMarketMomentum[];
+
+    if (!predictionMarkets || predictionMarkets.length === 0) {
+      return { boost: 0, snippet: '' };
+    }
+
+    // Filter markets by category matching sector (fuzzy match)
+    const relevantMarkets = predictionMarkets.filter(m => {
+      const cat = m.category.toLowerCase();
+      const sec = sector.toLowerCase();
+
+      // Direct category match
+      if (cat.includes(sec) || sec.includes(cat)) return true;
+
+      // Finance-related mappings
+      if (sec === 'financials' && (cat.includes('finance') || cat.includes('market') || cat.includes('economy'))) return true;
+      if (sec === 'technology' && cat.includes('tech')) return true;
+      if (sec === 'energy' && cat.includes('energy')) return true;
+
+      return false;
+    });
+
+    if (relevantMarkets.length === 0) {
+      return { boost: 0, snippet: '' };
+    }
+
+    // Calculate average momentum across relevant markets
+    const avgMomentum = relevantMarkets.reduce((sum, m) => sum + m.sentimentMomentum, 0) / relevantMarkets.length;
+
+    // Boost confidence if momentum aligns with direction
+    let boost = 0;
+    let snippet = '';
+
+    if (direction === 'LONG' && avgMomentum > 0.1) {
+      // Positive momentum supports LONG signals
+      boost = Math.min(avgMomentum * 0.05, 0.05); // Max +0.05 confidence boost
+      const pct = (avgMomentum * 100).toFixed(1);
+      snippet = ` Prediction market momentum: +${pct}% (24h) confirms bullish sentiment.`;
+    } else if (direction === 'SHORT' && avgMomentum < -0.1) {
+      // Negative momentum supports SHORT signals
+      boost = Math.min(Math.abs(avgMomentum) * 0.05, 0.05); // Max +0.05 confidence boost
+      const pct = (avgMomentum * 100).toFixed(1);
+      snippet = ` Prediction market momentum: ${pct}% (24h) confirms bearish sentiment.`;
+    }
+
+    return { boost, snippet };
+  } catch (err) {
+    console.warn('[SentimentStrategy] Prediction market boost failed:', err);
+    return { boost: 0, snippet: '' };
+  }
+}
+
+/**
  * Generate signals based on sector sentiment
  */
 function generateSentimentSignals(): void {
@@ -156,7 +217,11 @@ function generateSentimentSignals(): void {
 
     // LONG signal: tone > +2.5
     if (averageTone > 2.5) {
-      const confidence = Math.min(Math.abs(averageTone) / 5.0, 0.9);
+      const baseConfidence = Math.min(Math.abs(averageTone) / 5.0, 0.9);
+
+      // Get prediction market momentum boost
+      const { boost, snippet } = getPredictionMarketBoost(sector, 'LONG');
+      const confidence = Math.min(baseConfidence + boost, 0.95); // Cap at 0.95
 
       // Generate signal for the primary symbol (first in list)
       const symbol = symbols[0];
@@ -168,7 +233,7 @@ function generateSentimentSignals(): void {
         symbol,
         direction: 'LONG',
         confidence,
-        reasoning: `${sector} sector shows strong positive sentiment (avg tone: ${averageTone.toFixed(1)}) over 4-hour window with ${eventCount} news events. Positive media coverage typically precedes sector strength.`,
+        reasoning: `${sector} sector shows strong positive sentiment (avg tone: ${averageTone.toFixed(1)}) over 4-hour window with ${eventCount} news events. Positive media coverage typically precedes sector strength.${snippet}`,
         targetReturn: 0.04, // 4% target
         stopLoss: 0.02, // 2% stop
         takeProfit: 0.04,
@@ -180,7 +245,11 @@ function generateSentimentSignals(): void {
 
     // SHORT signal: tone < -2.5
     if (averageTone < -2.5) {
-      const confidence = Math.min(Math.abs(averageTone) / 5.0, 0.9);
+      const baseConfidence = Math.min(Math.abs(averageTone) / 5.0, 0.9);
+
+      // Get prediction market momentum boost
+      const { boost, snippet } = getPredictionMarketBoost(sector, 'SHORT');
+      const confidence = Math.min(baseConfidence + boost, 0.95); // Cap at 0.95
 
       // Generate signal for the primary symbol
       const symbol = symbols[0];
@@ -192,7 +261,7 @@ function generateSentimentSignals(): void {
         symbol,
         direction: 'SHORT',
         confidence,
-        reasoning: `${sector} sector shows strong negative sentiment (avg tone: ${averageTone.toFixed(1)}) over 4-hour window with ${eventCount} news events. Negative media coverage often precedes sector weakness.`,
+        reasoning: `${sector} sector shows strong negative sentiment (avg tone: ${averageTone.toFixed(1)}) over 4-hour window with ${eventCount} news events. Negative media coverage often precedes sector weakness.${snippet}`,
         targetReturn: 0.04, // 4% target
         stopLoss: 0.02, // 2% stop
         takeProfit: 0.04,
