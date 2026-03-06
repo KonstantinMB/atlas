@@ -6,8 +6,6 @@
 
 import { auth } from '../auth/auth-manager';
 import { openAuthModal } from '../auth/auth-modal';
-import { getMockLeaderboardData, isMockDataEnabled } from '../data/mock-leaderboard';
-import { createRewardsShowcase, createRewardsTeaser, createMockModeToggle, createCompetitionStats } from './leaderboard-rewards';
 
 const POLL_INTERVAL_MS = 90_000;
 
@@ -69,26 +67,6 @@ function formatTime(ts: number): string {
 }
 
 async function fetchLeaderboard(period: Period): Promise<LeaderboardResponse | null> {
-  // Check if mock mode is enabled
-  if (isMockDataEnabled()) {
-    const mockEntries = getMockLeaderboardData(period);
-    const now = Date.now();
-    const periodDays = { weekly: 7, monthly: 30, quarterly: 90, yearly: 365 }[period];
-    const periodStart = new Date(now - periodDays * 24 * 60 * 60 * 1000);
-    const periodEnd = new Date(now);
-
-    return {
-      period,
-      periodLabel: period.charAt(0).toUpperCase() + period.slice(1),
-      periodStart: periodStart.toISOString(),
-      periodEnd: periodEnd.toISOString(),
-      updatedAt: now,
-      entries: mockEntries,
-      totalCount: mockEntries.length,
-    };
-  }
-
-  // Real API call
   const headers: Record<string, string> = {};
   const token = auth.getToken();
   if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -313,21 +291,30 @@ function createView(): HTMLElement {
     </div>
     <div class="leaderboard-content">
       <div class="leaderboard-hero">
-        <div class="leaderboard-logo-trophy-big">🏆</div>
-        <h1 class="leaderboard-logo">PAPER TRADING CHAMPIONS</h1>
-        <p class="leaderboard-tagline">Compete with traders worldwide • $1M virtual capital • Real rankings, zero risk</p>
+        <h1 class="leaderboard-logo">🏆 PAPER TRADING CHAMPIONS</h1>
+        <p class="leaderboard-tagline">Who's crushing it? Real competition, zero real money. Trade stocks, ETFs, crypto & forex on a $1M paper account — climb the ranks and flex those returns.</p>
       </div>
-      <div id="leaderboard-competition-stats-section"></div>
-      <div id="leaderboard-rewards-section"></div>
-      <div id="leaderboard-rewards-teaser-section"></div>
-      <div class="leaderboard-controls">
-        <div id="leaderboard-mock-toggle-section"></div>
-        <div class="leaderboard-pills">
-          <button type="button" class="leaderboard-pill" data-period="weekly">Weekly</button>
-          <button type="button" class="leaderboard-pill" data-period="monthly">Monthly</button>
-          <button type="button" class="leaderboard-pill" data-period="quarterly">Quarterly</button>
-          <button type="button" class="leaderboard-pill" data-period="yearly">Yearly</button>
+      <div class="leaderboard-rewards-teaser">
+        <div class="leaderboard-rewards-card">
+          <span class="leaderboard-rewards-icon">🎁</span>
+          <div>
+            <strong>Rewards & Giveaways Coming Soon</strong>
+            <p>Top performers will be rewarded. Stay tuned for exclusive prizes for monthly & quarterly champions!</p>
+          </div>
         </div>
+        <div class="leaderboard-rewards-card">
+          <span class="leaderboard-rewards-icon">🥇</span>
+          <div>
+            <strong>Podium Perks</strong>
+            <p>#1, #2, #3 — the best get the glory. Future giveaways reserved for our chart-toppers.</p>
+          </div>
+        </div>
+      </div>
+      <div class="leaderboard-pills">
+        <button type="button" class="leaderboard-pill" data-period="weekly">Weekly</button>
+        <button type="button" class="leaderboard-pill" data-period="monthly">Monthly</button>
+        <button type="button" class="leaderboard-pill" data-period="quarterly">Quarterly</button>
+        <button type="button" class="leaderboard-pill" data-period="yearly">Yearly</button>
       </div>
       <div class="leaderboard-subheader">
         <span class="leaderboard-subheader-text">Ranked by portfolio return • You appear on all time periods when you trade • Last updated: —</span>
@@ -369,60 +356,12 @@ export function initLeaderboardView(parent: HTMLElement): HTMLElement {
   containerEl = createView();
   parent.appendChild(containerEl);
 
-  // Inject competition stats (always visible in mock mode)
-  const statsSection = containerEl.querySelector('#leaderboard-competition-stats-section');
-  if (statsSection && isMockDataEnabled()) {
-    statsSection.appendChild(createCompetitionStats());
-  }
-
-  // Inject rewards showcase (always visible in mock mode demo)
-  const rewardsSection = containerEl.querySelector('#leaderboard-rewards-section');
-  if (rewardsSection && isMockDataEnabled()) {
-    rewardsSection.appendChild(createRewardsShowcase());
-  }
-
-  // Inject compact rewards teaser
-  const teaserSection = containerEl.querySelector('#leaderboard-rewards-teaser-section');
-  if (teaserSection) {
-    teaserSection.appendChild(createRewardsTeaser());
-  }
-
-  // Inject mock mode toggle
-  const toggleSection = containerEl.querySelector('#leaderboard-mock-toggle-section');
-  if (toggleSection) {
-    toggleSection.appendChild(createMockModeToggle());
-  }
-
   currentUsername = auth.getUser()?.username ?? null;
   window.addEventListener('auth:authenticated', () => {
     currentUsername = auth.getUser()?.username ?? null;
     renderBanner();
     void loadAndRender();
   });
-
-  // Listen for mock toggle changes
-  window.addEventListener('leaderboard:mock-toggle', ((e: CustomEvent) => {
-    const { enabled } = e.detail;
-
-    // Re-render competition stats based on mode
-    const statsSection = containerEl?.querySelector('#leaderboard-competition-stats-section');
-    if (statsSection) {
-      statsSection.innerHTML = '';
-      if (enabled) {
-        statsSection.appendChild(createCompetitionStats());
-      }
-    }
-
-    // Re-render rewards showcase based on mode
-    const rewardsSection = containerEl?.querySelector('#leaderboard-rewards-section');
-    if (rewardsSection) {
-      rewardsSection.innerHTML = '';
-      if (enabled) {
-        rewardsSection.appendChild(createRewardsShowcase());
-      }
-    }
-    void loadAndRender();
-  }) as EventListener);
 
   const monthlyBtn = containerEl.querySelector('[data-period="monthly"]');
   if (monthlyBtn) monthlyBtn.classList.add('active');

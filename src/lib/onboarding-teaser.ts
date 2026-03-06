@@ -22,8 +22,18 @@ export function initOnboardingTeaser(): void {
     <button type="button" class="onboarding-teaser-close" id="onboarding-teaser-close" aria-label="Dismiss">×</button>
   `;
 
+  function positionNearButton(): void {
+    const btn = document.getElementById('onboarding-tour-btn');
+    if (!btn) return;
+    const rect = btn.getBoundingClientRect();
+    banner.style.top = `${rect.bottom + 6}px`;
+    banner.style.left = `${rect.left}px`;
+    banner.style.right = 'auto';
+  }
+
   const closeBtn = banner.querySelector('#onboarding-teaser-close');
   closeBtn?.addEventListener('click', () => {
+    window.removeEventListener('resize', positionNearButton);
     banner.classList.add('onboarding-teaser-closing');
     banner.addEventListener('transitionend', () => {
       banner.remove();
@@ -34,6 +44,8 @@ export function initOnboardingTeaser(): void {
   });
 
   document.body.appendChild(banner);
+  positionNearButton();
+  window.addEventListener('resize', positionNearButton);
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
