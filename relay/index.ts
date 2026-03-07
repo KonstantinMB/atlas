@@ -18,7 +18,6 @@ import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { AISStreamClient } from './ais-stream.js';
-import { OpenSkyPoller } from './opensky-poll.js';
 
 const PORT = parseInt(process.env.PORT ?? '8080', 10);
 
@@ -97,12 +96,12 @@ if (process.env.AISSTREAM_API_KEY) {
 }
 
 // --- OpenSky poller -------------------------------------------------------
+// DISABLED: Railway IPs are blocked by OpenSky Network
+// Aircraft data comes from Vercel edge function /api/osint/opensky instead
+// (Edge function has triple-redundancy: adsb.fi, OpenSky, ADS-B Exchange)
 
-const openskPoller = new OpenSkyPoller();
-openskPoller.subscribe((aircraft) => broadcast('aircraft', aircraft));
-
-// start() is async — it probes connectivity first and skips polling if blocked
-void openskPoller.start(30_000);
+console.log('[Relay] OpenSky polling disabled (use edge function /api/osint/opensky instead)');
+console.log('[Relay] Aircraft data will be fetched via browser → Vercel edge → aircraft APIs');
 
 // --- Start server ---------------------------------------------------------
 
@@ -114,12 +113,10 @@ server.listen(PORT, () => {
 
 process.on('SIGTERM', () => {
   console.log('[Relay] SIGTERM received, shutting down…');
-  openskPoller.stop();
   server.close(() => process.exit(0));
 });
 
 process.on('SIGINT', () => {
   console.log('[Relay] SIGINT received, shutting down…');
-  openskPoller.stop();
   server.close(() => process.exit(0));
 });

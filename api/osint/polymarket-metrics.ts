@@ -18,7 +18,7 @@ export const config = { runtime: 'edge' };
 
 const POLYMARKET_URL = 'https://gamma-api.polymarket.com/events?limit=50&active=true';
 const CLOB_HISTORY_URL = 'https://clob.polymarket.com/prices-history';
-const TOP_MARKETS_COUNT = 15; // Fetch history for top 15 by volume
+const TOP_MARKETS_COUNT = 30; // Fetch history for top 30 by volume (more markets for signal diversity)
 
 interface PolymarketRawMarket {
   id?: string;

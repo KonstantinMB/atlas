@@ -31,7 +31,7 @@ import assetMapping from '../../../data/prediction-market-asset-mapping.json';
 const STRATEGY_NAME = 'prediction-markets';
 const UPDATE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const MOMENTUM_THRESHOLD = 0.15; // ±15%
-const HIGH_VOLUME_THRESHOLD = 500_000; // $500K
+const HIGH_VOLUME_THRESHOLD = 80_000; // $80K (lowered for more signal frequency)
 
 let updateTimer: number | null = null;
 
@@ -302,13 +302,28 @@ function generateSignals(): void {
       m.volume24h > HIGH_VOLUME_THRESHOLD
     );
 
+    // Sort by momentum strength * volume (prioritize high-conviction + liquid markets)
+    // This ensures we pick from ALL markets, not just first ones that pass filter
+    const sortedMarkets = highMomentumMarkets.sort((a, b) => {
+      const scoreA = Math.abs(a.sentimentMomentum) * Math.log10(a.volume24h + 1);
+      const scoreB = Math.abs(b.sentimentMomentum) * Math.log10(b.volume24h + 1);
+      return scoreB - scoreA; // Descending (best first)
+    });
+
     console.log(
-      `[PredictionMarketStrategy] Found ${highMomentumMarkets.length} high-momentum markets (>${MOMENTUM_THRESHOLD * 100}%, >${HIGH_VOLUME_THRESHOLD})`
+      `[PredictionMarketStrategy] Found ${sortedMarkets.length} high-momentum markets (>${MOMENTUM_THRESHOLD * 100}%, >${HIGH_VOLUME_THRESHOLD / 1000}K vol)`
     );
+
+    if (sortedMarkets.length > 0) {
+      console.log(
+        `[PredictionMarketStrategy] Top market: "${sortedMarkets[0].title}" ` +
+        `(${(sortedMarkets[0].sentimentMomentum * 100).toFixed(1)}% momentum, $${(sortedMarkets[0].volume24h / 1000).toFixed(0)}K vol)`
+      );
+    }
 
     let signalCount = 0;
 
-    for (const market of highMomentumMarkets) {
+    for (const market of sortedMarkets) {
       // Match market to tradeable assets
       const mappingResult = matchMarketToAssets(market);
       if (!mappingResult || mappingResult.symbols.length === 0) {
