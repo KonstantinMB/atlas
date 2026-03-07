@@ -17,6 +17,7 @@
 
 import { registerLeftPanel as registerPanel } from './panel-manager';
 import { showToast } from '../lib/toast';
+import { dataService } from '../lib/data-service';
 import type { Signal } from '../trading/engine';
 import { executionLoop } from '../trading/engine/execution-loop';
 
@@ -346,6 +347,7 @@ function buildDetailPopup(sig: Signal): HTMLElement {
 
 let allSignals: Signal[]     = [...MOCK_SIGNALS];
 let filteredSignals: Signal[] = [...MOCK_SIGNALS];
+let predMarketSignals: Signal[] = [];
 let filterStrategy: string | null = null;
 let autoExecute = false;
 let isLive = false;
@@ -507,7 +509,18 @@ function renderPredictionMarketSignals(signals: Signal[]): void {
   if (!predListEl) return;
 
   if (signals.length === 0) {
-    predListEl.innerHTML = '<div class="sig-pred-market-empty">No prediction market signals yet</div>';
+    const metrics = dataService.getPolymarketMetrics();
+    const hasMarketData = metrics?.markets && metrics.markets.length > 0;
+    predListEl.innerHTML = `
+      <div class="sig-pred-market-empty">
+        <div class="sig-pred-empty-title">No prediction market signals yet</div>
+        <div class="sig-pred-empty-hint">
+          ${hasMarketData
+            ? `✓ ${metrics!.markets!.length} markets streaming. Signals require momentum >15%, volume >$80K, asset mapping, and news/CII confirmation.`
+            : 'No market data yet. Check the Prediction Markets panel—if it shows markets, the API is working and signals will appear when conditions are met.'}
+        </div>
+      </div>
+    `;
     return;
   }
 
@@ -573,7 +586,7 @@ function onNewSignals(signals: Signal[]): void {
   if (liveDot) liveDot.classList.add('live');
 
   // Separate prediction market signals from regular signals
-  const predMarketSignals = allSignals.filter(s => s.strategy === 'prediction-markets' || s.strategy === 'PREDICTION-MARKETS');
+  predMarketSignals = allSignals.filter(s => s.strategy === 'prediction-markets' || s.strategy === 'PREDICTION-MARKETS');
   const regularSignals = allSignals.filter(s => s.strategy !== 'prediction-markets' && s.strategy !== 'PREDICTION-MARKETS');
 
   // Update regular signals list
@@ -714,6 +727,14 @@ function buildBody(container: HTMLElement): void {
     const { signals } = (e as CustomEvent<{ signals: Signal[] }>).detail;
     if (Array.isArray(signals)) onNewSignals(signals);
   });
+
+  // ── Polymarket data — refresh prediction-market empty state when data arrives ─
+  dataService.addEventListener('polymarket-metrics', () => {
+    renderPredictionMarketSignals(predMarketSignals);
+  });
+
+  // Initial render of prediction market section (shows empty state with data-status hint)
+  renderPredictionMarketSignals(predMarketSignals);
 
   // ── Tick timer — refresh expiry countdowns every 30 s ────────────────────
   setInterval(() => {

@@ -156,7 +156,10 @@ function buildLoadingSkeleton(): HTMLElement {
 function buildEmptyState(): HTMLElement {
   const empty = document.createElement('div');
   empty.className = 'prediction-empty-state';
-  empty.textContent = 'No prediction market data';
+  empty.innerHTML = `
+    <div class="prediction-empty-title">No prediction market data</div>
+    <div class="prediction-empty-hint">If this persists, check API or network. Data streams from Polymarket every 5 min.</div>
+  `;
   return empty;
 }
 
