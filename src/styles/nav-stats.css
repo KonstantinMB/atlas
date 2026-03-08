@@ -85,15 +85,20 @@
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-tertiary);
+  line-height: 1;
 }
 
 .nav-stat-dot {
-  font-size: 6px;
+  font-size: 8px;
   color: var(--signal-positive);
+  line-height: 1;
+  display: flex;
+  align-items: center;
 }
 
 .nav-stat-value {
   font-weight: var(--font-medium);
+  line-height: 1;
 }
 
 .nav-stat-sep {

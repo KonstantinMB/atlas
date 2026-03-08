@@ -255,15 +255,17 @@ function escapeHtml(str: string): string {
 }
 
 function getLayerColor(layer: ToastData['layer']): string {
+  // Use CSS variables from design system instead of hardcoded colors
+  const root = getComputedStyle(document.documentElement);
   switch (layer) {
     case 'PRICE':
-      return '#4FC3F7';
+      return '#4FC3F7'; // Cyan - price movements
     case 'EVENT':
-      return '#FFB300';
+      return root.getPropertyValue('--text-accent').trim() || '#D4A843'; // Gold accent
     case 'PHYSICAL':
-      return '#FF3D3D';
+      return root.getPropertyValue('--signal-negative').trim() || '#FF1744'; // Red - critical
     case 'REF':
-      return '#94a3b8';
+      return root.getPropertyValue('--text-tertiary').trim() || '#94a3b8'; // Gray - reference
   }
 }
 

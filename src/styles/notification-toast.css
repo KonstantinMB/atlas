@@ -46,12 +46,12 @@
 
 /* Severity-based styling */
 .toast-high {
-  border-left: 4px solid #FFB300; /* Amber */
+  border-left: 4px solid var(--text-accent); /* Gold from theme */
 }
 
 .toast-critical {
   border-left: 4px solid var(--signal-negative);
-  box-shadow: var(--shadow-xl), 0 0 20px rgba(255, 23, 68, 0.2);
+  box-shadow: var(--shadow-xl), 0 0 20px rgba(255, 23, 68, 0.15);
 }
 
 /* ── Toast Header ───────────────────────────────────────────────────────── */
@@ -202,7 +202,7 @@
   background: linear-gradient(
     90deg,
     var(--signal-negative) 0%,
-    #FFB300 100%
+    var(--text-accent) 100%
   );
 }
 
