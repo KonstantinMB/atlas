@@ -26,7 +26,7 @@ interface ToastData {
 let toastContainer: HTMLElement | null = null;
 let activeToasts: Map<string, { el: HTMLElement; timer: NodeJS.Timeout }> = new Map();
 const MAX_TOASTS = 3;
-const AUTO_DISMISS_MS = 5000;
+const AUTO_DISMISS_MS = 8000; // 8 seconds - slower to dismiss
 
 // Settings
 let soundEnabled = true; // Toggleable via settings
@@ -87,6 +87,8 @@ export function showToast(data: ToastData): void {
       progressBar.style.width = '0%';
     });
   }
+
+  console.log(`[NotificationToast] Showing toast for ${AUTO_DISMISS_MS / 1000}s:`, data.title);
 }
 
 // ── Build Toast Element ───────────────────────────────────────────────────

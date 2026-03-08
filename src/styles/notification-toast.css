@@ -20,12 +20,13 @@
 
 .toast {
   position: relative;
-  width: 360px;
-  padding: 16px;
+  width: 320px;
+  padding: 12px 14px;
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
-  border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
   pointer-events: all;
   transform: translateX(400px);
   opacity: 0;
@@ -107,11 +108,11 @@
 
 .toast-title {
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: var(--font-semibold);
   color: var(--text-primary);
   line-height: 1.4;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .toast-details {
