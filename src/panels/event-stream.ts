@@ -330,11 +330,22 @@ function animateNewEvent(event: StreamEvent): void {
   const matchesFilter = currentFilter === 'ALL' || event.layer === currentFilter;
   if (!matchesFilter) return;
 
+  // Check if we already have 50 events - if so, full re-render happens via applyFilter
+  // Don't animate, just let renderEventList handle it
+  if (filteredEvents.length > 50) {
+    return; // renderEventList will handle the full list
+  }
+
   const card = buildEventCard(event);
   card.style.opacity = '0';
   card.style.transform = 'translateY(-20px)';
 
   listContainer.insertBefore(card, listContainer.firstChild);
+
+  // Remove excess cards beyond 50
+  while (listContainer.children.length > 50) {
+    listContainer.removeChild(listContainer.lastChild!);
+  }
 
   // Trigger animation
   requestAnimationFrame(() => {
@@ -443,6 +454,13 @@ function generateMockEvents(): void {
   // Generate some initial mock events
   const mockEvents: Partial<StreamEvent>[] = [
     {
+      layer: 'REF',
+      severity: 'low',
+      title: 'Data refresh: Market indices updated',
+      details: 'S&P 500, NASDAQ, DJI refreshed from Yahoo Finance',
+      source: 'mock',
+    },
+    {
       layer: 'PRICE',
       severity: 'low',
       title: 'AAPL $198.42 +0.31%',
@@ -463,6 +481,13 @@ function generateMockEvents(): void {
       details: 'Infrastructure: 0 facilities within 600km',
       source: 'usgs',
       location: [-175.2, -21.2],
+    },
+    {
+      layer: 'REF',
+      severity: 'low',
+      title: 'Reference update: New sanctions list',
+      details: 'OFAC added 12 entities, OpenSanctions database updated',
+      source: 'mock',
     },
     {
       layer: 'EVENT',

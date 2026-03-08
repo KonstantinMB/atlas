@@ -272,7 +272,11 @@ export default withCors(async (_req: Request) => {
             const data = await fetchFn();
             return { name, data };
           } catch (err) {
-            console.warn(`[Aircraft] ${name} failed:`, err instanceof Error ? err.message : err);
+            // Only log non-network errors (these are expected when sources are unavailable)
+            const errorMsg = err instanceof Error ? err.message : String(err);
+            if (!errorMsg.includes('failed') && !errorMsg.includes('No aircraft')) {
+              console.warn(`[Aircraft] ${name}:`, errorMsg);
+            }
             throw err;
           }
         })

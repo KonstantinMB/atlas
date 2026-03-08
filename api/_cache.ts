@@ -236,13 +236,21 @@ export async function withCache<T>(
 
     return freshData;
   } catch (error) {
-    console.error(`Upstream fetch failed for key "${key}":`, error);
+    // Only log unexpected errors (not auth failures which are handled gracefully)
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const isExpectedError = errorMessage.includes('Authentication failed') || errorMessage.includes('403');
+
+    if (!isExpectedError) {
+      console.error(`Upstream fetch failed for key "${key}":`, error);
+    } else {
+      console.log(`[Cache] ${key}: ${errorMessage}`);
+    }
 
     // Stale-on-error fallback: try to return expired cache data
     const staleData = await getStaleData<T>(key);
 
     if (staleData !== null) {
-      console.warn(`Returning stale data for key "${key}" due to upstream failure`);
+      console.log(`[Cache] Returning stale data for key "${key}"`);
       return staleData;
     }
 

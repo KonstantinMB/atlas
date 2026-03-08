@@ -205,10 +205,12 @@ body {
   background: var(--bg-panel);
   border: 1px solid var(--border-primary);
   border-radius: 10px;
-  padding: 0.35rem 0.5rem;
+  padding: 0.35rem 0.75rem;
   backdrop-filter: blur(12px);
   box-shadow: 0 4px 16px rgba(0,0,0,0.3);
   transition: background var(--transition-base), border-color var(--transition-base);
+  min-width: fit-content;
+  max-width: 95vw;
 }
 
 .header-spacer { flex: 1; min-width: 0.5rem; }
@@ -6413,7 +6415,7 @@ kbd {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.28rem 0.6rem;
+  padding: 0.28rem 0.5rem;
   background: rgba(74, 222, 128, 0.08);
   border: 1px solid rgba(74, 222, 128, 0.25);
   border-radius: 8px;
@@ -6482,8 +6484,10 @@ kbd {
   gap: 0;
   background: var(--bg-panel);
   border-top: 1px solid var(--border-primary);
+  border-bottom: none;
   backdrop-filter: blur(12px);
   padding: 0 0.75rem;
+  margin: 0;
   font-family: var(--font-mono);
   font-size: 0.65rem;
   overflow: hidden;

@@ -13,9 +13,12 @@
   height: 32px;
   background: var(--surface-raised);
   border-top: 1px solid var(--border-medium);
+  border-bottom: none;
   overflow: hidden;
   z-index: 300; /* Below status bar (301) so shortcuts remain clickable */
   transition: border-color 0.3s ease;
+  margin: 0;
+  padding: 0;
 }
 
 .data-ticker.has-failures {
