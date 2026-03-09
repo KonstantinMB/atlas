@@ -128,63 +128,82 @@ function subscribeToDataEvents(): void {
   dataService.addEventListener('gdelt-news', (data: any) => {
     addEvent({
       layer: 'EVENT',
-      severity: 'medium',
+      severity: data.tone < -5 ? 'high' : 'medium',
       title: `NEWS: ${data.title || 'Global event'}`,
       details: data.summary || '',
       source: 'gdelt',
       location: data.location,
+      referenceUrl: data.sourceUrl,
     });
   });
 
   dataService.addEventListener('usgs-earthquake', (data: any) => {
     addEvent({
       layer: 'PHYSICAL',
-      severity: data.magnitude > 6 ? 'high' : 'medium',
+      severity: data.magnitude > 6 ? 'critical' : data.magnitude > 5 ? 'high' : 'medium',
       title: `M${data.magnitude} EARTHQUAKE — ${data.location}`,
       details: `Infrastructure: ${data.nearbyFacilities || 0} facilities within 600km`,
       source: 'usgs',
       location: data.coordinates,
+      magnitude: data.magnitude,
+      affectedAssets: data.nearbyFacilities > 0 ? ['Critical infrastructure', 'Regional supply chains'] : undefined,
+      referenceUrl: data.url || 'https://earthquake.usgs.gov/earthquakes/map/',
     });
   });
 
   dataService.addEventListener('price-update', (data: any) => {
+    const changePercent = data.change * 100;
+    const isHighVolatility = Math.abs(changePercent) > 5;
+
     addEvent({
       layer: 'PRICE',
-      severity: 'low',
-      title: `${data.symbol} $${data.price.toFixed(2)} ${data.change >= 0 ? '+' : ''}${(
-        data.change * 100
-      ).toFixed(2)}%`,
-      details: '',
+      severity: isHighVolatility ? 'high' : 'low',
+      title: `${data.symbol} $${data.price.toFixed(2)} ${data.change >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`,
+      details: isHighVolatility ? 'High volatility detected' : '',
       source: data.source || 'finnhub',
+      referenceUrl: `https://finance.yahoo.com/quote/${data.symbol}`,
     });
   });
 
   dataService.addEventListener('firms-fire', (data: any) => {
+    const isCritical = data.infrastructure && (
+      data.infrastructure.includes('oil') ||
+      data.infrastructure.includes('pipeline') ||
+      data.infrastructure.includes('refinery')
+    );
+
     addEvent({
       layer: 'PHYSICAL',
-      severity: 'high',
+      severity: isCritical ? 'critical' : 'high',
       title: `FIRE DETECTED: ${data.latitude.toFixed(1)}°N, ${data.longitude.toFixed(1)}°E`,
       details: `Near: ${data.nearLocation || 'Unknown'} (${data.distance || 0}km)\nInfrastructure: ${
         data.infrastructure || 'Unknown'
       }\nSeverity: ${data.severity?.toUpperCase() || 'MEDIUM'}`,
       source: 'nasa_firms',
       location: [data.longitude, data.latitude],
+      magnitude: data.brightness || data.frp,
+      affectedAssets: data.infrastructure ? [data.infrastructure] : undefined,
+      referenceUrl: 'https://firms.modaps.eosdis.nasa.gov/map/',
     });
   });
 
   dataService.addEventListener('acled-conflict', (data: any) => {
+    const ciiIncrease = (data.ciiNew || 0) - (data.ciiOld || 0);
+    const isCritical = ciiIncrease > 10 || data.fatalities > 50;
+
     addEvent({
       layer: 'EVENT',
-      severity: 'high',
+      severity: isCritical ? 'critical' : 'high',
       title: `${data.eventType || 'PROTEST'}: ${data.participants || 0}+ participants, ${
         data.location
       }`,
-      details: `CII ${data.country}: ${data.ciiOld || 0} → ${data.ciiNew || 0} (+${
-        (data.ciiNew || 0) - (data.ciiOld || 0)
-      })`,
+      details: `CII ${data.country}: ${data.ciiOld || 0} → ${data.ciiNew || 0} (+${ciiIncrease})`,
       source: 'acled',
       location: data.coordinates,
       signalsGenerated: data.signalsGenerated,
+      magnitude: ciiIncrease,
+      affectedAssets: data.affectedSectors || [`${data.country} assets`, 'Regional stability'],
+      referenceUrl: data.url || 'https://acleddata.com/',
     });
   });
 
