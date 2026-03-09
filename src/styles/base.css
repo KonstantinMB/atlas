@@ -148,6 +148,8 @@ html {
   overflow: hidden;
   position: fixed;
   inset: 0;
+  padding: 0;
+  margin: 0;
 }
 
 body {
@@ -6508,7 +6510,9 @@ kbd {
   font-family: var(--font-mono);
   font-size: 0.65rem;
   overflow: hidden;
-  box-shadow: 0 2px 0 0 var(--bg-panel); /* Extend bg to cover subpixel gap */
+  box-sizing: border-box;
+  /* Extend bg to cover subpixel gap at viewport bottom */
+  box-shadow: 0 2px 0 0 var(--bg-panel);
 }
 
 .status-bar-section {

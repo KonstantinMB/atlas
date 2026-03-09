@@ -72,33 +72,6 @@
       <div id="auth-nav-slot" class="auth-nav-slot"></div>
     </div>
 
-    <!-- Bottom Status Bar: NAV | Daily P&L | Signals | Risk -->
-    <div id="status-bar" class="status-bar">
-      <div class="status-bar-section" id="sb-nav">
-        <span class="sb-label">NAV</span>
-        <span class="sb-value" id="sb-nav-value">$1,000,000</span>
-      </div>
-      <div class="status-bar-divider"></div>
-      <div class="status-bar-section" id="sb-pnl">
-        <span class="sb-label">Daily P&amp;L</span>
-        <span class="sb-value" id="sb-pnl-value">+$0</span>
-      </div>
-      <div class="status-bar-divider"></div>
-      <div class="status-bar-section" id="sb-signals">
-        <span class="sb-label">Signals</span>
-        <span class="sb-value" id="sb-signals-value">0 active</span>
-      </div>
-      <div class="status-bar-divider"></div>
-      <div class="status-bar-section" id="sb-risk">
-        <span class="sb-label">Risk</span>
-        <span class="sb-value sb-risk-dot" id="sb-risk-value">● GREEN</span>
-      </div>
-      <div class="status-bar-divider"></div>
-      <div class="status-bar-section sb-shortcuts">
-        <span class="sb-hint">T·S·P·Space·Esc</span>
-      </div>
-    </div>
-
     <!-- Left Panel: Layer Toggles + Portfolio Management -->
     <div id="left-panel" class="left-panel">
       <!-- Layer toggles rendered by controls.ts -->
@@ -122,6 +95,34 @@
 
     <!-- Command Palette injected by command-palette.ts -->
   </div>
+
+  <!-- Bottom Status Bar: NAV | Daily P&L | Signals | Risk (outside #app for correct viewport positioning) -->
+  <div id="status-bar" class="status-bar">
+    <div class="status-bar-section" id="sb-nav">
+      <span class="sb-label">NAV</span>
+      <span class="sb-value" id="sb-nav-value">$1,000,000</span>
+    </div>
+    <div class="status-bar-divider"></div>
+    <div class="status-bar-section" id="sb-pnl">
+      <span class="sb-label">Daily P&amp;L</span>
+      <span class="sb-value" id="sb-pnl-value">+$0</span>
+    </div>
+    <div class="status-bar-divider"></div>
+    <div class="status-bar-section" id="sb-signals">
+      <span class="sb-label">Signals</span>
+      <span class="sb-value" id="sb-signals-value">0 active</span>
+    </div>
+    <div class="status-bar-divider"></div>
+    <div class="status-bar-section" id="sb-risk">
+      <span class="sb-label">Risk</span>
+      <span class="sb-value sb-risk-dot" id="sb-risk-value">● GREEN</span>
+    </div>
+    <div class="status-bar-divider"></div>
+    <div class="status-bar-section sb-shortcuts">
+      <span class="sb-hint">T·S·P·Space·Esc</span>
+    </div>
+  </div>
+
   <script type="module" src="/main.ts"></script>
 </body>
 </html>
