@@ -19,8 +19,10 @@ let overlayEl: HTMLElement | null = null;
 // ── Check if Should Show ──────────────────────────────────────────────────
 
 export function shouldShowLoadingSequence(): boolean {
-  // Only show on first visit
-  return !localStorage.getItem(STORAGE_KEY);
+  // Disabled - skip loading sequence entirely for faster initialization
+  return false;
+  // Previously: Only show on first visit
+  // return !localStorage.getItem(STORAGE_KEY);
 }
 
 // ── Initialize & Play ─────────────────────────────────────────────────────

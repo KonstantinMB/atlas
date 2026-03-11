@@ -18,11 +18,17 @@ function pickMessage(): string {
 }
 
 export function initWelcomePopup(): void {
+  // Disabled - skip welcome popup for faster initialization
+  return;
+
+  // Previously: Show on first visit
+  /*
   try {
     if (localStorage.getItem(STORAGE_KEY) === '1') return;
   } catch {
     return;
   }
+  */
 
   const overlay = document.createElement('div');
   overlay.className = 'welcome-popup-overlay';
