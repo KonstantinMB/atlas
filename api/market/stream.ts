@@ -25,7 +25,7 @@ interface MarketTick {
 }
 
 /** Max symbols to fetch per request (avoid timeout/rate limits) */
-const MAX_SYMBOLS = 100; // Reduced from 500 to prevent CPU spikes
+const MAX_SYMBOLS = 500; // Full universe coverage
 
 /** Concurrency limit for Yahoo fetches */
 const YAHOO_CONCURRENCY = 15; // Increased from 10 for faster execution
